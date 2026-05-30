@@ -36,6 +36,16 @@ export const storeImages = {
 };
 
 export function getProductImage(product) {
+  try {
+    const storedImages = JSON.parse(localStorage.getItem('sportstore_product_images') || '{}');
+    const storedImage = storedImages[product?.id]?.mainImageUrl;
+    if (storedImage) {
+      return storedImage;
+    }
+  } catch {
+    // Use bundled category image when local image metadata is unavailable.
+  }
+
   const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
   const productId = Number(product?.id) || 1;
 

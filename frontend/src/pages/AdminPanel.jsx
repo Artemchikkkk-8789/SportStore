@@ -7,10 +7,54 @@ import { api } from '../services/api.js';
 const initialProduct = {
   name: '',
   brand: '',
-  size: '',
   price: '',
-  categoryId: ''
+  categoryId: '',
+  sizeType: 'clothing',
+  selectedSizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  mainImageUrl: '',
+  additionalImageUrls: ''
 };
+
+const sizeOptions = {
+  clothing: {
+    label: 'Одяг',
+    sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+  },
+  shoes: {
+    label: 'Взуття',
+    sizes: ['39', '40', '41', '42', '43', '44', '45']
+  }
+};
+
+function getStoredProductImages() {
+  try {
+    return JSON.parse(localStorage.getItem('sportstore_product_images') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveProductImages(productIds, mainImageUrl, additionalImageUrls) {
+  const trimmedMainImageUrl = mainImageUrl.trim();
+  const images = additionalImageUrls
+    .split('\n')
+    .map((url) => url.trim())
+    .filter(Boolean);
+
+  if (!trimmedMainImageUrl && images.length === 0) {
+    return;
+  }
+
+  const storedImages = getStoredProductImages();
+  productIds.forEach((id) => {
+    storedImages[id] = {
+      mainImageUrl: trimmedMainImageUrl,
+      images
+    };
+  });
+
+  localStorage.setItem('sportstore_product_images', JSON.stringify(storedImages));
+}
 
 export default function AdminPanel() {
   const products = useAsyncData(() => api.getProducts(), []);
@@ -21,21 +65,60 @@ export default function AdminPanel() {
   const [busy, setBusy] = useState(false);
 
   function updateProduct(key, value) {
-    setProductForm((current) => ({ ...current, [key]: value }));
+    setProductForm((current) => {
+      if (key === 'sizeType') {
+        return {
+          ...current,
+          sizeType: value,
+          selectedSizes: sizeOptions[value].sizes
+        };
+      }
+
+      return { ...current, [key]: value };
+    });
+  }
+
+  function toggleSize(size) {
+    setProductForm((current) => {
+      const selectedSizes = current.selectedSizes.includes(size)
+        ? current.selectedSizes.filter((selectedSize) => selectedSize !== size)
+        : [...current.selectedSizes, size];
+
+      return { ...current, selectedSizes };
+    });
   }
 
   async function createProduct(event) {
     event.preventDefault();
+    if (productForm.selectedSizes.length === 0) {
+      setMessage('Оберіть хоча б один розмір.');
+      return;
+    }
+
     setBusy(true);
     setMessage('');
     try {
-      await api.createProduct({
-        ...productForm,
-        price: Number(productForm.price),
-        categoryId: Number(productForm.categoryId)
-      });
+      const createdProducts = [];
+
+      for (const size of productForm.selectedSizes) {
+        const createdProduct = await api.createProduct({
+          name: productForm.name,
+          brand: productForm.brand,
+          price: Number(productForm.price),
+          categoryId: Number(productForm.categoryId),
+          size
+        });
+
+        createdProducts.push(createdProduct);
+      }
+
+      saveProductImages(
+        createdProducts.map((product) => product.id),
+        productForm.mainImageUrl,
+        productForm.additionalImageUrls
+      );
       setProductForm(initialProduct);
-      setMessage('Товар створено.');
+      setMessage(`Створено ${createdProducts.length} товарів для вибраних розмірів.`);
       products.reload();
     } catch (err) {
       setMessage(err.message || 'Не вдалося створити товар.');
@@ -65,6 +148,9 @@ export default function AdminPanel() {
     setMessage('');
     try {
       await api.deleteProduct(id);
+      const storedImages = getStoredProductImages();
+      delete storedImages[id];
+      localStorage.setItem('sportstore_product_images', JSON.stringify(storedImages));
       setMessage('Товар видалено.');
       products.reload();
     } catch (err) {
@@ -95,10 +181,6 @@ export default function AdminPanel() {
           </label>
           <div className="price-grid">
             <label>
-              Розмір
-              <input value={productForm.size} onChange={(event) => updateProduct('size', event.target.value)} required />
-            </label>
-            <label>
               Ціна
               <input
                 type="number"
@@ -108,6 +190,31 @@ export default function AdminPanel() {
                 required
               />
             </label>
+            <label>
+              Тип розмірної сітки
+              <select value={productForm.sizeType} onChange={(event) => updateProduct('sizeType', event.target.value)}>
+                {Object.entries(sizeOptions).map(([key, option]) => (
+                  <option key={key} value={key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="admin-size-picker">
+            <span>Розміри</span>
+            <div className="size-checkbox-grid">
+              {sizeOptions[productForm.sizeType].sizes.map((size) => (
+                <label className="size-checkbox" key={size}>
+                  <input
+                    type="checkbox"
+                    checked={productForm.selectedSizes.includes(size)}
+                    onChange={() => toggleSize(size)}
+                  />
+                  <span>{size}</span>
+                </label>
+              ))}
+            </div>
           </div>
           <label>
             Категорія
@@ -123,6 +230,24 @@ export default function AdminPanel() {
                 </option>
               ))}
             </select>
+          </label>
+          <label>
+            Основне фото товару через URL
+            <input
+              type="url"
+              value={productForm.mainImageUrl}
+              placeholder="https://example.com/product-main.jpg"
+              onChange={(event) => updateProduct('mainImageUrl', event.target.value)}
+            />
+          </label>
+          <label>
+            Додаткові фото через URL
+            <textarea
+              rows="4"
+              value={productForm.additionalImageUrls}
+              placeholder={'https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg'}
+              onChange={(event) => updateProduct('additionalImageUrls', event.target.value)}
+            />
           </label>
           <button className="primary-button full" type="submit" disabled={busy}>
             <Plus size={18} />
@@ -161,6 +286,7 @@ export default function AdminPanel() {
               <span>#{product.id}</span>
               <strong>{product.name}</strong>
               <span>{product.brand}</span>
+              <span>{product.size}</span>
               <span>{Number(product.price).toFixed(2)} грн</span>
               <button className="icon-button danger" type="button" disabled={busy} onClick={() => deleteProduct(product.id)}>
                 <Trash2 size={18} />
