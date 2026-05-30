@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
+import { deliveryData } from '../data/deliveryData.js';
 import { api } from '../services/api.js';
 import { useState } from 'react';
 
@@ -18,47 +19,7 @@ const paymentOptions = [
   'Переказ на картку'
 ];
 
-const ukrainianCities = [
-  'Київ',
-  'Львів',
-  'Харків',
-  'Одеса',
-  'Дніпро',
-  'Запоріжжя',
-  'Вінниця',
-  'Тернопіль',
-  'Івано-Франківськ',
-  'Чернівці',
-  'Луцьк',
-  'Рівне',
-  'Житомир',
-  'Ужгород',
-  'Полтава',
-  'Черкаси',
-  'Чернігів',
-  'Суми',
-  'Миколаїв',
-  'Херсон',
-  'Кропивницький'
-];
-
-const warehouseMocks = Object.fromEntries(
-  ukrainianCities.map((city) => [
-    city,
-    {
-      'nova-poshta': [
-        'Відділення №1 — вул. Центральна, 10',
-        'Відділення №2 — просп. Спортивний, 24',
-        'Відділення №3 — вул. Перемоги, 7'
-      ],
-      ukrposhta: [
-        'Відділення №1 — пл. Поштова, 2',
-        'Відділення №2 — вул. Шевченка, 18',
-        'Відділення №3 — вул. Незалежності, 35'
-      ]
-    }
-  ])
-);
+const ukrainianCities = Object.keys(deliveryData);
 
 const initialCheckout = {
   fullName: '',
@@ -87,7 +48,8 @@ export default function Cart() {
   const selectedDelivery = deliveryOptions.find((option) => option.id === checkoutForm.deliveryId) || deliveryOptions[0];
   const grandTotal = total + selectedDelivery.price;
   const isCourierDelivery = selectedDelivery.id === 'courier';
-  const warehouseOptions = checkoutForm.city ? warehouseMocks[checkoutForm.city]?.[selectedDelivery.id] || [] : [];
+  const deliveryDataKey = selectedDelivery.id === 'nova-poshta' ? 'novaPoshta' : 'ukrposhta';
+  const warehouseOptions = checkoutForm.city ? deliveryData[checkoutForm.city]?.[deliveryDataKey] || [] : [];
   const warehouseLabel =
     selectedDelivery.id === 'nova-poshta'
       ? 'Виберіть відділення НП'
