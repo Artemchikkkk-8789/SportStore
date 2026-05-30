@@ -2,10 +2,14 @@ package com.sportshop.config;
 
 import com.sportshop.entity.Category;
 import com.sportshop.entity.Product;
+import com.sportshop.entity.Role;
+import com.sportshop.entity.User;
 import com.sportshop.repository.CategoryRepository;
 import com.sportshop.repository.ProductRepository;
+import com.sportshop.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,9 +18,13 @@ public class DataSeeder implements CommandLineRunner {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        createAdminUser();
+
         productRepository.deleteAll();
         categoryRepository.deleteAll();
 
@@ -29,6 +37,18 @@ public class DataSeeder implements CommandLineRunner {
         seedShorts(shorts);
         seedShoes(shoes);
         seedJackets(jackets);
+    }
+
+    private void createAdminUser() {
+        if (userRepository.findByUsername("admin").isPresent()) {
+            return;
+        }
+
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setRole(Role.ROLE_ADMIN);
+        userRepository.save(admin);
     }
 
     private void seedTShirts(Category category) {
