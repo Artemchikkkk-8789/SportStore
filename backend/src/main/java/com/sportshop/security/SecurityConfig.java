@@ -41,16 +41,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
 
                         // ===== ADMIN: POST/PUT/DELETE =====
-                        .requestMatchers(HttpMethod.POST, "/products/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/products/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/products/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/products/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/products/**").hasAuthority("ROLE_ADMIN")
 
-                        .requestMatchers(HttpMethod.POST, "/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/categories/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/categories/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/categories/**").hasAuthority("ROLE_ADMIN")
 
                         // ===== ORDERS =====
-                        .requestMatchers("/orders/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/orders/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
                         // інше — обов’язково з JWT
                         .anyRequest().authenticated()
