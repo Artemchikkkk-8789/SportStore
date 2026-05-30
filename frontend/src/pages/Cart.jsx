@@ -18,11 +18,60 @@ const paymentOptions = [
   'Переказ на картку'
 ];
 
+const ukrainianCities = [
+  'Київ',
+  'Львів',
+  'Харків',
+  'Одеса',
+  'Дніпро',
+  'Запоріжжя',
+  'Вінниця',
+  'Тернопіль',
+  'Івано-Франківськ',
+  'Чернівці',
+  'Луцьк',
+  'Рівне',
+  'Житомир',
+  'Ужгород',
+  'Полтава',
+  'Черкаси',
+  'Чернігів',
+  'Суми',
+  'Миколаїв',
+  'Херсон',
+  'Кропивницький'
+];
+
+const warehouseMocks = Object.fromEntries(
+  ukrainianCities.map((city) => [
+    city,
+    {
+      'nova-poshta': [
+        'Відділення №1 — вул. Центральна, 10',
+        'Відділення №2 — просп. Спортивний, 24',
+        'Відділення №3 — вул. Перемоги, 7'
+      ],
+      ukrposhta: [
+        'Відділення №1 — пл. Поштова, 2',
+        'Відділення №2 — вул. Шевченка, 18',
+        'Відділення №3 — вул. Незалежності, 35'
+      ]
+    }
+  ])
+);
+
 const initialCheckout = {
   fullName: '',
   phone: '',
   city: '',
-  address: '',
+  warehouse: '',
+  courierAddress: {
+    street: '',
+    building: '',
+    entrance: '',
+    floor: '',
+    apartment: ''
+  },
   comment: '',
   deliveryId: deliveryOptions[0].id,
   payment: paymentOptions[0]
@@ -37,9 +86,44 @@ export default function Cart() {
 
   const selectedDelivery = deliveryOptions.find((option) => option.id === checkoutForm.deliveryId) || deliveryOptions[0];
   const grandTotal = total + selectedDelivery.price;
+  const isCourierDelivery = selectedDelivery.id === 'courier';
+  const warehouseOptions = checkoutForm.city ? warehouseMocks[checkoutForm.city]?.[selectedDelivery.id] || [] : [];
+  const warehouseLabel =
+    selectedDelivery.id === 'nova-poshta'
+      ? 'Виберіть відділення НП'
+      : 'Виберіть відділення Укрпошти';
 
   function updateCheckoutField(key, value) {
-    setCheckoutForm((current) => ({ ...current, [key]: value }));
+    setCheckoutForm((current) => {
+      if (key === 'phone') {
+        return { ...current, phone: value.replace(/\D/g, '').slice(0, 9) };
+      }
+
+      if (key === 'city') {
+        return { ...current, city: value, warehouse: '' };
+      }
+
+      if (key === 'deliveryId') {
+        return {
+          ...current,
+          deliveryId: value,
+          warehouse: '',
+          courierAddress: initialCheckout.courierAddress
+        };
+      }
+
+      return { ...current, [key]: value };
+    });
+  }
+
+  function updateCourierAddressField(key, value) {
+    setCheckoutForm((current) => ({
+      ...current,
+      courierAddress: {
+        ...current.courierAddress,
+        [key]: value
+      }
+    }));
   }
 
   async function checkout(event) {
@@ -55,12 +139,28 @@ export default function Cart() {
     try {
       const productIds = items.flatMap((item) => Array.from({ length: item.quantity }, () => item.id));
       await api.createOrder(productIds);
+
+      const deliveryInfo = {
+        fullName: checkoutForm.fullName,
+        phone: `+380${checkoutForm.phone}`,
+        city: checkoutForm.city,
+        deliveryType: selectedDelivery.label,
+        paymentType: checkoutForm.payment,
+        comment: checkoutForm.comment
+      };
+
+      if (isCourierDelivery) {
+        deliveryInfo.courierAddress = checkoutForm.courierAddress;
+      } else {
+        deliveryInfo.warehouse = checkoutForm.warehouse;
+      }
+
       localStorage.setItem(
         'sportstore_last_checkout',
         JSON.stringify({
-          ...checkoutForm,
-          delivery: selectedDelivery,
+          deliveryInfo,
           itemsTotal: total,
+          deliveryPrice: selectedDelivery.price,
           total: grandTotal,
           createdAt: new Date().toISOString()
         })
@@ -68,7 +168,7 @@ export default function Cart() {
       clearCart();
       setCheckoutForm(initialCheckout);
       setMessage(
-        `Замовлення успішно оформлено для ${checkoutForm.fullName}. Доставка: ${selectedDelivery.label}, оплата: ${checkoutForm.payment}. Загальна сума: ${grandTotal.toFixed(2)} грн.`
+        `Замовлення успішно оформлено для ${deliveryInfo.fullName}. Телефон: ${deliveryInfo.phone}. Доставка: ${deliveryInfo.deliveryType}, оплата: ${deliveryInfo.paymentType}. Загальна сума: ${grandTotal.toFixed(2)} грн.`
       );
     } catch (err) {
       setMessage(err.message || 'Не вдалося оформити замовлення.');
@@ -133,50 +233,44 @@ export default function Cart() {
                 ПІБ
                 <input
                   value={checkoutForm.fullName}
-                  placeholder="Іваненко Іван Іванович"
+                  placeholder="Прізвище Ім’я По батькові"
                   onChange={(event) => updateCheckoutField('fullName', event.target.value)}
                   required
                 />
               </label>
               <label>
                 Телефон
-                <input
-                  type="tel"
-                  value={checkoutForm.phone}
-                  placeholder="+380..."
-                  onChange={(event) => updateCheckoutField('phone', event.target.value)}
-                  required
-                />
+                <span className="phone-input">
+                  <span>+380</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{9}"
+                    maxLength="9"
+                    value={checkoutForm.phone}
+                    placeholder="XXXXXXXXX"
+                    title="Введіть 9 цифр після +380"
+                    onChange={(event) => updateCheckoutField('phone', event.target.value)}
+                    required
+                  />
+                </span>
               </label>
               <label>
                 Місто
-                <input
+                <select
                   value={checkoutForm.city}
-                  placeholder="Київ"
                   onChange={(event) => updateCheckoutField('city', event.target.value)}
                   required
-                />
-              </label>
-              <label>
-                Адреса або відділення
-                <input
-                  value={checkoutForm.address}
-                  placeholder="Відділення 12 або вул. Спортивна, 7"
-                  onChange={(event) => updateCheckoutField('address', event.target.value)}
-                  required
-                />
+                >
+                  <option value="">Оберіть місто</option>
+                  {ukrainianCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
-
-            <label>
-              Коментар
-              <textarea
-                rows="4"
-                value={checkoutForm.comment}
-                placeholder="Додаткові побажання до замовлення"
-                onChange={(event) => updateCheckoutField('comment', event.target.value)}
-              />
-            </label>
 
             <div className="checkout-choice-group">
               <h3>Доставка</h3>
@@ -197,6 +291,69 @@ export default function Cart() {
               </div>
             </div>
 
+            {!isCourierDelivery && (
+              <label>
+                {warehouseLabel}
+                <select
+                  value={checkoutForm.warehouse}
+                  onChange={(event) => updateCheckoutField('warehouse', event.target.value)}
+                  disabled={!checkoutForm.city}
+                  required
+                >
+                  <option value="">
+                    {checkoutForm.city ? 'Оберіть відділення' : 'Спочатку оберіть місто'}
+                  </option>
+                  {warehouseOptions.map((warehouse) => (
+                    <option key={warehouse} value={warehouse}>
+                      {warehouse}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {isCourierDelivery && (
+              <div className="courier-fields">
+                <label>
+                  Вулиця
+                  <input
+                    value={checkoutForm.courierAddress.street}
+                    onChange={(event) => updateCourierAddressField('street', event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Будинок
+                  <input
+                    value={checkoutForm.courierAddress.building}
+                    onChange={(event) => updateCourierAddressField('building', event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Під’їзд
+                  <input
+                    value={checkoutForm.courierAddress.entrance}
+                    onChange={(event) => updateCourierAddressField('entrance', event.target.value)}
+                  />
+                </label>
+                <label>
+                  Поверх
+                  <input
+                    value={checkoutForm.courierAddress.floor}
+                    onChange={(event) => updateCourierAddressField('floor', event.target.value)}
+                  />
+                </label>
+                <label>
+                  Квартира
+                  <input
+                    value={checkoutForm.courierAddress.apartment}
+                    onChange={(event) => updateCourierAddressField('apartment', event.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
             <div className="checkout-choice-group">
               <h3>Оплата</h3>
               <div className="option-grid">
@@ -214,6 +371,16 @@ export default function Cart() {
                 ))}
               </div>
             </div>
+
+            <label>
+              Коментар
+              <textarea
+                rows="4"
+                value={checkoutForm.comment}
+                placeholder="Додаткові побажання до замовлення"
+                onChange={(event) => updateCheckoutField('comment', event.target.value)}
+              />
+            </label>
           </section>
         </div>
 
