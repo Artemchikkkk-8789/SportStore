@@ -151,8 +151,7 @@ main {
   margin-left: auto;
 }
 
-.main-nav a.mobile-auth-link,
-.mobile-auth-action {
+.main-nav a.mobile-auth-link {
   display: none;
 }
 
@@ -1083,8 +1082,7 @@ textarea:focus {
     display: flex;
   }
 
-  .main-nav a.mobile-auth-link,
-  .mobile-auth-action {
+  .main-nav a.mobile-auth-link {
     display: inline-flex;
   }
 

@@ -55,7 +55,7 @@ export default function Header() {
             </NavLink>
           )}
           {isAuthenticated ? (
-            <button className="ghost-button mobile-auth-action" type="button" onClick={logout}>
+            <button className="ghost-button nav-logout-button" type="button" onClick={logout}>
               <LogOut size={18} />
               Вийти
             </button>
@@ -72,12 +72,7 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          {isAuthenticated ? (
-            <button className="ghost-button" type="button" onClick={logout}>
-              <LogOut size={18} />
-              Вийти
-            </button>
-          ) : (
+          {!isAuthenticated && (
             <>
               <NavLink className="ghost-button" to="/login">
                 Увійти
