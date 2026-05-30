@@ -17,30 +17,42 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (productRepository.count() > 0) {
-            return;
-        }
+        productRepository.deleteAll();
+        categoryRepository.deleteAll();
 
         Category tShirts = createCategory("Футболки");
         Category shorts = createCategory("Шорти");
         Category shoes = createCategory("Кросівки");
         Category jackets = createCategory("Куртки");
 
-        createProduct("Футболка Nike Dri-FIT Academy", "Nike", 799, "M", tShirts);
-        createProduct("Футболка Adidas Training Essentials", "Adidas", 749, "L", tShirts);
-        createProduct("Футболка Puma Active Tee", "Puma", 620, "S", tShirts);
+        seedTShirts(tShirts);
+        seedShorts(shorts);
+        seedShoes(shoes);
+        seedJackets(jackets);
+    }
 
-        createProduct("Шорти Nike Park III", "Nike", 699, "M", shorts);
-        createProduct("Шорти Adidas Entrada 22", "Adidas", 650, "L", shorts);
-        createProduct("Шорти Under Armour Tech", "Under Armour", 820, "XL", shorts);
+    private void seedTShirts(Category category) {
+        createProduct("Футболка Nike Dri-FIT Academy", "Nike", 799, "M", category);
+        createProduct("Футболка Adidas Training Essentials", "Adidas", 749, "L", category);
+        createProduct("Футболка Puma Active Tee", "Puma", 620, "S", category);
+    }
 
-        createProduct("Кросівки Nike Revolution 7", "Nike", 2499, "42", shoes);
-        createProduct("Кросівки Adidas Runfalcon 3", "Adidas", 2299, "43", shoes);
-        createProduct("Кросівки Puma Flyer Runner", "Puma", 1999, "41", shoes);
+    private void seedShorts(Category category) {
+        createProduct("Шорти Nike Park III", "Nike", 699, "M", category);
+        createProduct("Шорти Adidas Entrada 22", "Adidas", 650, "L", category);
+        createProduct("Шорти Under Armour Tech", "Under Armour", 820, "XL", category);
+    }
 
-        createProduct("Куртка Nike Windrunner", "Nike", 3299, "L", jackets);
-        createProduct("Куртка Adidas Tiro 24", "Adidas", 2899, "M", jackets);
-        createProduct("Куртка Puma TeamLiga", "Puma", 2599, "XL", jackets);
+    private void seedShoes(Category category) {
+        createProduct("Кросівки Nike Revolution 7", "Nike", 2499, "42", category);
+        createProduct("Кросівки Adidas Runfalcon 3", "Adidas", 2299, "43", category);
+        createProduct("Кросівки Puma Flyer Runner", "Puma", 1999, "41", category);
+    }
+
+    private void seedJackets(Category category) {
+        createProduct("Куртка Nike Windrunner", "Nike", 3299, "L", category);
+        createProduct("Куртка Adidas Tiro 24", "Adidas", 2899, "M", category);
+        createProduct("Куртка Puma TeamLiga", "Puma", 2599, "XL", category);
     }
 
     private Category createCategory(String name) {
