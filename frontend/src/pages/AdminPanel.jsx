@@ -1,5 +1,5 @@
 import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
 import { api } from '../services/api.js';
@@ -51,6 +51,7 @@ function inferSizeType(sizes) {
 export default function AdminPanel() {
   const products = useAsyncData(() => api.getProducts(), []);
   const categories = useAsyncData(() => api.getCategories(), []);
+  const productFormRef = useRef(null);
   const [productForm, setProductForm] = useState(initialProduct);
   const [categoryName, setCategoryName] = useState('');
   const [message, setMessage] = useState('');
@@ -175,6 +176,9 @@ export default function AdminPanel() {
     });
     setPhotoPreviews({ main: '', additional: [] });
     setMessage(`Редагування товару #${product.id}`);
+    window.setTimeout(() => {
+      productFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   }
 
   async function createCategory(event) {
@@ -219,7 +223,11 @@ export default function AdminPanel() {
       </div>
 
       <div className="admin-grid">
-        <form className="admin-form" onSubmit={createProduct}>
+        <form
+          className={`admin-form ${editingProductId ? 'editing' : ''}`}
+          ref={productFormRef}
+          onSubmit={createProduct}
+        >
           <div className="admin-form-heading">
             <h2>{editingProductId ? `Редагування товару #${editingProductId}` : 'Новий товар'}</h2>
             {editingProductId && (
@@ -228,6 +236,11 @@ export default function AdminPanel() {
               </button>
             )}
           </div>
+          {editingProductId && (
+            <p className="admin-edit-notice">
+              Форма заповнена поточними даними товару. Після змін натисніть "Зберегти зміни".
+            </p>
+          )}
           <label>
             Назва
             <input value={productForm.name} onChange={(event) => updateProduct('name', event.target.value)} required />
@@ -326,6 +339,7 @@ export default function AdminPanel() {
             <Plus size={18} />
             {editingProductId ? 'Зберегти зміни' : 'Додати товар'}
           </button>
+          {message && <p className="form-message">{message}</p>}
         </form>
 
         <form className="admin-form" onSubmit={createCategory}>
@@ -338,7 +352,6 @@ export default function AdminPanel() {
             <Plus size={18} />
             Додати категорію
           </button>
-          {message && <p className="form-message">{message}</p>}
         </form>
       </div>
 
@@ -361,7 +374,15 @@ export default function AdminPanel() {
               <span>{product.brand}</span>
               <span>{product.size}</span>
               <span>{Number(product.price).toFixed(2)} грн</span>
-              <button className="ghost-button admin-edit-button" type="button" disabled={busy} onClick={() => startEdit(product)}>
+              <button
+                className="ghost-button admin-edit-button"
+                type="button"
+                disabled={busy}
+                onClick={(event) => {
+                  event.preventDefault();
+                  startEdit(product);
+                }}
+              >
                 <Pencil size={18} />
                 Редагувати
               </button>

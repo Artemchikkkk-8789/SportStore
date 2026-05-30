@@ -1082,6 +1082,11 @@ textarea:focus {
   padding: 20px;
 }
 
+.admin-form.editing {
+  border-color: var(--blue);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.13);
+}
+
 .admin-form h2 {
   margin: 0 0 12px;
 }
@@ -1095,6 +1100,16 @@ textarea:focus {
 
 .admin-form-heading h2 {
   margin: 0;
+}
+
+.admin-edit-notice {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: var(--blue);
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .admin-size-picker {
