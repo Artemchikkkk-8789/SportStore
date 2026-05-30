@@ -7,25 +7,39 @@ export const storeImages = {
     shoes: new URL('../../images/shoes/shoes1.jpg', import.meta.url).href,
     jackets: new URL('../../images/jackets/jacket1.jpg', import.meta.url).href
   },
-  products: [
-    new URL('../../images/t-shirts/t-shirt1.jpg', import.meta.url).href,
-    new URL('../../images/t-shirts/t-shirt2.jpg', import.meta.url).href,
-    new URL('../../images/t-shirts/t-shirt4.jpg', import.meta.url).href,
-    new URL('../../images/shorts/shorts2.jpg', import.meta.url).href,
-    new URL('../../images/shorts/shorts3.jpg', import.meta.url).href,
-    new URL('../../images/shoes/shoes1.jpg', import.meta.url).href,
-    new URL('../../images/shoes/shoes3.jpg', import.meta.url).href,
-    new URL('../../images/jackets/jacket2.jpg', import.meta.url).href,
-    new URL('../../images/jackets/jacket3.jpg', import.meta.url).href
-  ]
+  products: {
+    1: [
+      new URL('../../images/t-shirts/t-shirt1.jpg', import.meta.url).href,
+      new URL('../../images/t-shirts/t-shirt2.jpg', import.meta.url).href,
+      new URL('../../images/t-shirts/t-shirt3.jpg', import.meta.url).href,
+      new URL('../../images/t-shirts/t-shirt4.jpg', import.meta.url).href
+    ],
+    2: [
+      new URL('../../images/shorts/shorts1.jpg', import.meta.url).href,
+      new URL('../../images/shorts/shorts2.jpg', import.meta.url).href,
+      new URL('../../images/shorts/shorts3.jpg', import.meta.url).href,
+      new URL('../../images/shorts/shorts4.jpg', import.meta.url).href
+    ],
+    3: [
+      new URL('../../images/shoes/shoes1.jpg', import.meta.url).href,
+      new URL('../../images/shoes/shoes2.jpg', import.meta.url).href,
+      new URL('../../images/shoes/shoes3.jpg', import.meta.url).href,
+      new URL('../../images/shoes/shoes4.jpg', import.meta.url).href
+    ],
+    4: [
+      new URL('../../images/jackets/jacket1.jpg', import.meta.url).href,
+      new URL('../../images/jackets/jacket2.jpg', import.meta.url).href,
+      new URL('../../images/jackets/jacket3.jpg', import.meta.url).href,
+      new URL('../../images/jackets/jacket4.jpg', import.meta.url).href
+    ]
+  }
 };
 
 export function getProductImage(product) {
-  if (!product?.id) {
-    return storeImages.products[0];
-  }
+  const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
+  const productId = Number(product?.id) || 1;
 
-  return storeImages.products[(Number(product.id) - 1) % storeImages.products.length];
+  return categoryImages[(productId - 1) % categoryImages.length];
 }
 
 export function getCategoryImage(category) {
