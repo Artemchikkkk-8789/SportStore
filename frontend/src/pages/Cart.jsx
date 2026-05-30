@@ -38,6 +38,10 @@ const initialCheckout = {
   payment: paymentOptions[0]
 };
 
+function getCartItemKey(item) {
+  return item.cartKey || `${item.id}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
+}
+
 export default function Cart() {
   const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
@@ -171,23 +175,26 @@ export default function Cart() {
       <form className="cart-layout" onSubmit={checkout}>
         <div className="cart-list">
           {items.map((item) => (
-            <article className="cart-item" key={item.id}>
+            <article className="cart-item" key={getCartItemKey(item)}>
               <img src={item.image} alt={item.name} />
               <div>
                 <h2>{item.name}</h2>
-                <p>{item.brand} · {item.size}</p>
+                <p>
+                  {item.brand} · Розмір: {item.selectedSize || item.size}
+                  {item.selectedColor ? ` · Колір: ${item.selectedColor}` : ''}
+                </p>
                 <strong>{Number(item.price).toFixed(2)} грн</strong>
               </div>
               <div className="quantity-control">
-                <button type="button" className="icon-button" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                <button type="button" className="icon-button" onClick={() => updateQuantity(getCartItemKey(item), item.quantity - 1)}>
                   <Minus size={16} />
                 </button>
                 <span>{item.quantity}</span>
-                <button type="button" className="icon-button" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                <button type="button" className="icon-button" onClick={() => updateQuantity(getCartItemKey(item), item.quantity + 1)}>
                   <Plus size={16} />
                 </button>
               </div>
-              <button type="button" className="icon-button danger" onClick={() => removeFromCart(item.id)}>
+              <button type="button" className="icon-button danger" onClick={() => removeFromCart(getCartItemKey(item))}>
                 <Trash2 size={18} />
               </button>
             </article>

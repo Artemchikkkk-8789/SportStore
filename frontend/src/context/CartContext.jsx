@@ -3,28 +3,36 @@ import { useLocalStorage } from '../hooks/useLocalStorage.js';
 
 const CartContext = createContext(null);
 
+function getCartKey(item) {
+  return item.cartKey || `${item.id}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
+}
+
 export function CartProvider({ children }) {
   const [items, setItems] = useLocalStorage('sportstore_cart', []);
 
   function addToCart(product, quantity = 1) {
+    const selectedSize = product.selectedSize || product.size || '';
+    const selectedColor = product.selectedColor || '';
+    const cartKey = `${product.id}-${selectedSize}-${selectedColor}`;
+
     setItems((current) => {
-      const existing = current.find((item) => item.id === product.id);
+      const existing = current.find((item) => getCartKey(item) === cartKey);
       if (existing) {
         return current.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+          getCartKey(item) === cartKey ? { ...item, quantity: item.quantity + quantity } : item
         );
       }
-      return [...current, { ...product, quantity }];
+      return [...current, { ...product, cartKey, selectedSize, selectedColor, quantity }];
     });
   }
 
-  function removeFromCart(id) {
-    setItems((current) => current.filter((item) => item.id !== id));
+  function removeFromCart(cartKey) {
+    setItems((current) => current.filter((item) => getCartKey(item) !== cartKey));
   }
 
-  function updateQuantity(id, quantity) {
+  function updateQuantity(cartKey, quantity) {
     setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item))
+      current.map((item) => (getCartKey(item) === cartKey ? { ...item, quantity: Math.max(1, quantity) } : item))
     );
   }
 

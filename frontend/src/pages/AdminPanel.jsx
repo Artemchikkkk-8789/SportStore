@@ -11,8 +11,7 @@ const initialProduct = {
   categoryId: '',
   sizeType: 'clothing',
   selectedSizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-  mainImageUrl: '',
-  additionalImageUrls: ''
+  selectedColors: ['Чорний']
 };
 
 const sizeOptions = {
@@ -26,34 +25,23 @@ const sizeOptions = {
   }
 };
 
-function getStoredProductImages() {
+const colorOptions = ['Чорний', 'Білий', 'Сірий', 'Синій', 'Червоний', 'Зелений'];
+
+function getStoredProductOptions() {
   try {
-    return JSON.parse(localStorage.getItem('sportstore_product_images') || '{}');
+    return JSON.parse(localStorage.getItem('sportstore_product_options') || '{}');
   } catch {
     return {};
   }
 }
 
-function saveProductImages(productIds, mainImageUrl, additionalImageUrls) {
-  const trimmedMainImageUrl = mainImageUrl.trim();
-  const images = additionalImageUrls
-    .split('\n')
-    .map((url) => url.trim())
-    .filter(Boolean);
-
-  if (!trimmedMainImageUrl && images.length === 0) {
-    return;
-  }
-
-  const storedImages = getStoredProductImages();
-  productIds.forEach((id) => {
-    storedImages[id] = {
-      mainImageUrl: trimmedMainImageUrl,
-      images
-    };
-  });
-
-  localStorage.setItem('sportstore_product_images', JSON.stringify(storedImages));
+function saveProductOptions(productId, selectedSizes, selectedColors) {
+  const storedOptions = getStoredProductOptions();
+  storedOptions[productId] = {
+    selectedSizes,
+    colors: selectedColors
+  };
+  localStorage.setItem('sportstore_product_options', JSON.stringify(storedOptions));
 }
 
 export default function AdminPanel() {
@@ -63,6 +51,7 @@ export default function AdminPanel() {
   const [categoryName, setCategoryName] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
 
   function updateProduct(key, value) {
     setProductForm((current) => {
@@ -88,37 +77,59 @@ export default function AdminPanel() {
     });
   }
 
+  function toggleColor(color) {
+    setProductForm((current) => {
+      const selectedColors = current.selectedColors.includes(color)
+        ? current.selectedColors.filter((selectedColor) => selectedColor !== color)
+        : [...current.selectedColors, color];
+
+      return { ...current, selectedColors };
+    });
+  }
+
+  function updateMainPhoto(event) {
+    const file = event.target.files?.[0];
+    setPhotoPreviews((current) => ({
+      ...current,
+      main: file ? URL.createObjectURL(file) : ''
+    }));
+  }
+
+  function updateAdditionalPhotos(event) {
+    const files = Array.from(event.target.files || []);
+    setPhotoPreviews((current) => ({
+      ...current,
+      additional: files.map((file) => URL.createObjectURL(file))
+    }));
+  }
+
   async function createProduct(event) {
     event.preventDefault();
     if (productForm.selectedSizes.length === 0) {
       setMessage('Оберіть хоча б один розмір.');
       return;
     }
+    if (productForm.selectedColors.length === 0) {
+      setMessage('Оберіть хоча б один колір.');
+      return;
+    }
 
     setBusy(true);
     setMessage('');
     try {
-      const createdProducts = [];
+      const createdProduct = await api.createProduct({
+        name: productForm.name,
+        brand: productForm.brand,
+        price: Number(productForm.price),
+        categoryId: Number(productForm.categoryId),
+        size: productForm.selectedSizes[0]
+      });
 
-      for (const size of productForm.selectedSizes) {
-        const createdProduct = await api.createProduct({
-          name: productForm.name,
-          brand: productForm.brand,
-          price: Number(productForm.price),
-          categoryId: Number(productForm.categoryId),
-          size
-        });
-
-        createdProducts.push(createdProduct);
-      }
-
-      saveProductImages(
-        createdProducts.map((product) => product.id),
-        productForm.mainImageUrl,
-        productForm.additionalImageUrls
-      );
+      saveProductOptions(createdProduct.id, productForm.selectedSizes, productForm.selectedColors);
       setProductForm(initialProduct);
-      setMessage(`Створено ${createdProducts.length} товарів для вибраних розмірів.`);
+      setPhotoPreviews({ main: '', additional: [] });
+      event.currentTarget.reset();
+      setMessage('Товар створено. Фото поки не відправляються на backend.');
       products.reload();
     } catch (err) {
       setMessage(err.message || 'Не вдалося створити товар.');
@@ -148,9 +159,9 @@ export default function AdminPanel() {
     setMessage('');
     try {
       await api.deleteProduct(id);
-      const storedImages = getStoredProductImages();
-      delete storedImages[id];
-      localStorage.setItem('sportstore_product_images', JSON.stringify(storedImages));
+      const storedOptions = getStoredProductOptions();
+      delete storedOptions[id];
+      localStorage.setItem('sportstore_product_options', JSON.stringify(storedOptions));
       setMessage('Товар видалено.');
       products.reload();
     } catch (err) {
@@ -216,6 +227,21 @@ export default function AdminPanel() {
               ))}
             </div>
           </div>
+          <div className="admin-size-picker">
+            <span>Кольори</span>
+            <div className="size-checkbox-grid">
+              {colorOptions.map((color) => (
+                <label className="size-checkbox" key={color}>
+                  <input
+                    type="checkbox"
+                    checked={productForm.selectedColors.includes(color)}
+                    onChange={() => toggleColor(color)}
+                  />
+                  <span>{color}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <label>
             Категорія
             <select
@@ -232,23 +258,24 @@ export default function AdminPanel() {
             </select>
           </label>
           <label>
-            Основне фото товару через URL
-            <input
-              type="url"
-              value={productForm.mainImageUrl}
-              placeholder="https://example.com/product-main.jpg"
-              onChange={(event) => updateProduct('mainImageUrl', event.target.value)}
-            />
+            Основне фото товару
+            <input type="file" accept="image/*" onChange={updateMainPhoto} />
           </label>
           <label>
-            Додаткові фото через URL
-            <textarea
-              rows="4"
-              value={productForm.additionalImageUrls}
-              placeholder={'https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg'}
-              onChange={(event) => updateProduct('additionalImageUrls', event.target.value)}
-            />
+            Додаткові фото товару
+            <input type="file" accept="image/*" multiple onChange={updateAdditionalPhotos} />
           </label>
+          <p className="admin-upload-note">
+            Завантаження фото буде підключено після налаштування серверного збереження файлів.
+          </p>
+          {(photoPreviews.main || photoPreviews.additional.length > 0) && (
+            <div className="photo-preview-grid">
+              {photoPreviews.main && <img src={photoPreviews.main} alt="Основне фото товару" />}
+              {photoPreviews.additional.map((preview) => (
+                <img key={preview} src={preview} alt="Додаткове фото товару" />
+              ))}
+            </div>
+          )}
           <button className="primary-button full" type="submit" disabled={busy}>
             <Plus size={18} />
             Додати товар
