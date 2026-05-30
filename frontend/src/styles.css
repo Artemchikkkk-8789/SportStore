@@ -492,7 +492,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--line);
@@ -502,8 +503,19 @@ select {
   padding: 10px 12px;
 }
 
+textarea {
+  resize: vertical;
+}
+
+input[type="radio"] {
+  width: auto;
+  min-height: auto;
+  accent-color: var(--accent);
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: 3px solid rgba(37, 99, 235, 0.16);
   border-color: var(--blue);
 }
@@ -646,16 +658,91 @@ select:focus {
   justify-items: center;
 }
 
+.checkout-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 10px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(18, 24, 38, 0.05);
+}
+
+.checkout-form h2,
+.checkout-form h3 {
+  margin: 0;
+}
+
+.checkout-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.checkout-choice-group {
+  display: grid;
+  gap: 12px;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.option-card {
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.option-card:has(input:checked) {
+  border-color: var(--accent);
+  background: #fff7f6;
+  box-shadow: 0 10px 24px rgba(240, 68, 56, 0.1);
+}
+
+.option-card span {
+  font-weight: 900;
+}
+
+.option-card strong {
+  grid-column: 2;
+  color: var(--accent);
+}
+
 .checkout-panel {
   position: sticky;
   top: 96px;
   padding: 20px;
 }
 
-.checkout-panel div {
+.checkout-panel .summary-row {
   display: flex;
   justify-content: space-between;
   margin: 18px 0;
+  gap: 12px;
+}
+
+.total-row {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 1.12rem;
+}
+
+.checkout-note {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .auth-page {
@@ -893,6 +980,11 @@ select:focus {
     grid-column: 2;
     grid-row: 2;
     justify-self: end;
+  }
+
+  .checkout-fields-grid,
+  .option-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-row {
