@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
-import { deliveryData } from '../data/deliveryData.js';
+import { deliveryData, deliveryTimeByCity, dispatchCity } from '../data/deliveryData.js';
 import { api } from '../services/api.js';
 import { useState } from 'react';
 
@@ -50,6 +50,7 @@ export default function Cart() {
   const isCourierDelivery = selectedDelivery.id === 'courier';
   const deliveryDataKey = selectedDelivery.id === 'nova-poshta' ? 'novaPoshta' : 'ukrposhta';
   const warehouseOptions = checkoutForm.city ? deliveryData[checkoutForm.city]?.[deliveryDataKey] || [] : [];
+  const estimatedDeliveryTime = checkoutForm.city ? deliveryTimeByCity[checkoutForm.city] || 'уточнюється' : '';
   const warehouseLabel =
     selectedDelivery.id === 'nova-poshta'
       ? 'Виберіть відділення НП'
@@ -107,6 +108,8 @@ export default function Cart() {
         phone: `+380${checkoutForm.phone}`,
         city: checkoutForm.city,
         deliveryType: selectedDelivery.label,
+        dispatchCity,
+        estimatedDeliveryTime,
         paymentType: checkoutForm.payment,
         comment: checkoutForm.comment
       };
@@ -236,6 +239,13 @@ export default function Cart() {
               </label>
             </div>
 
+            {checkoutForm.city && (
+              <div className="delivery-route-note">
+                <strong>Відправлення з м. {dispatchCity}</strong>
+                <span>Орієнтовний час доставки: {estimatedDeliveryTime}</span>
+              </div>
+            )}
+
             <div className="checkout-choice-group">
               <h3>Доставка</h3>
               <div className="option-grid">
@@ -363,7 +373,9 @@ export default function Cart() {
             <strong>{grandTotal.toFixed(2)} грн</strong>
           </div>
           <p className="checkout-note">
-            На backend поки передаються тільки ID товарів. Дані доставки й оплати зберігаються локально.
+            Відправлення з м. {dispatchCity}
+            {estimatedDeliveryTime ? ` · орієнтовний час доставки: ${estimatedDeliveryTime}` : ''}.
+            На backend поки передаються тільки ID товарів.
           </p>
           <button className="primary-button full" type="submit" disabled={submitting}>
             {submitting ? 'Оформлення...' : 'Підтвердити замовлення'}

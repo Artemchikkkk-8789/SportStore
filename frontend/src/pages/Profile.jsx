@@ -136,6 +136,14 @@ export default function Profile() {
                 <dd>{lastDelivery.deliveryType}</dd>
               </div>
               <div>
+                <dt>Відправлення</dt>
+                <dd>{lastDelivery.dispatchCity || 'Тернопіль'}</dd>
+              </div>
+              <div>
+                <dt>Час доставки</dt>
+                <dd>{lastDelivery.estimatedDeliveryTime || 'уточнюється'}</dd>
+              </div>
+              <div>
                 <dt>Адреса</dt>
                 <dd>{formatDeliveryAddress(lastDelivery)}</dd>
               </div>
@@ -167,7 +175,19 @@ export default function Profile() {
                 </p>
                 <p>
                   <MapPin size={16} />
-                  {order.deliveryInfo?.city || 'Місто не вказано'} · {order.deliveryInfo?.deliveryType || 'Доставка не вказана'}
+                  Звідки відправлено: {order.deliveryInfo?.dispatchCity || 'Тернопіль'}
+                </p>
+                <p>
+                  <CalendarDays size={16} />
+                  Орієнтовний час: {order.deliveryInfo?.estimatedDeliveryTime || 'уточнюється'}
+                </p>
+                <p>
+                  <MapPin size={16} />
+                  Місто доставки: {order.deliveryInfo?.city || 'не вказано'}
+                </p>
+                <p>
+                  <PackageCheck size={16} />
+                  Служба доставки: {order.deliveryInfo?.deliveryType || 'не вказана'}
                 </p>
                 <p>
                   <CreditCard size={16} />
