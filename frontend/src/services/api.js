@@ -54,6 +54,10 @@ export const api = {
     return request('/categories');
   },
 
+  getAdminStats() {
+    return request('/admin/stats');
+  },
+
   login(payload) {
     return request('/auth/login', {
       method: 'POST',

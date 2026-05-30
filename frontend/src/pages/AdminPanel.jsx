@@ -1,4 +1,4 @@
-import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Banknote, Folder, Package, Pencil, Plus, RefreshCw, ShoppingCart, Trash2, Users, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
@@ -50,6 +50,7 @@ function inferSizeType(sizes) {
 }
 
 export default function AdminPanel() {
+  const stats = useAsyncData(() => api.getAdminStats(), []);
   const products = useAsyncData(() => api.getProducts(), []);
   const categories = useAsyncData(() => api.getCategories(), []);
   const productFormRef = useRef(null);
@@ -289,6 +290,20 @@ export default function AdminPanel() {
     }).format(new Date(value));
   }
 
+  const statCards = [
+    { label: 'Товарів', value: stats.data.totalProducts || 0, icon: Package },
+    { label: 'Категорій', value: stats.data.totalCategories || 0, icon: Folder },
+    { label: 'Користувачів', value: stats.data.totalUsers || 0, icon: Users },
+    { label: 'Замовлень', value: stats.data.totalOrders || 0, icon: ShoppingCart },
+    { label: 'Виручка', value: `${Number(stats.data.totalRevenue || 0).toFixed(2)} грн`, icon: Banknote }
+  ];
+
+  const orderStatusStats = [
+    { label: 'Нові', value: stats.data.newOrders || 0, className: 'new' },
+    { label: 'Відправлені', value: stats.data.shippedOrders || 0, className: 'sent' },
+    { label: 'Доставлені', value: stats.data.deliveredOrders || 0, className: 'delivered' }
+  ];
+
   return (
     <section className="container admin-page">
       <div className="page-heading">
@@ -296,6 +311,45 @@ export default function AdminPanel() {
         <h1>Керування SportStore</h1>
         <p>Панель працює з backend endpoint-ами для товарів, категорій і замовлень.</p>
       </div>
+
+      <section className="admin-stats-section">
+        <div className="admin-list-heading">
+          <h2>Статистика</h2>
+          <button className="ghost-button" type="button" onClick={stats.reload}>
+            <RefreshCw size={18} />
+            Оновити
+          </button>
+        </div>
+        {stats.loading && <StateBlock title="Завантаження статистики..." />}
+        {stats.error && <StateBlock title="Не вдалося завантажити статистику" text={stats.error} />}
+        {!stats.loading && !stats.error && (
+          <>
+            <div className="admin-stats-grid">
+              {statCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <article className="admin-stat-card" key={card.label}>
+                    <Icon size={28} />
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                  </article>
+                );
+              })}
+            </div>
+            <div className="admin-status-summary">
+              <h3>Статуси замовлень</h3>
+              <div>
+                {orderStatusStats.map((status) => (
+                  <article key={status.label}>
+                    <span className={`status-badge ${status.className}`}>{status.label}</span>
+                    <strong>{status.value}</strong>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
 
       <div className="admin-grid">
         <form

@@ -36,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
 
+                        // ===== ADMIN API =====
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+
                         // ===== GET — ДЛЯ ВСІХ =====
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
