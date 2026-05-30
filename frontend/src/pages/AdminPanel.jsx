@@ -1,4 +1,4 @@
-import { Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
@@ -44,6 +44,10 @@ function saveProductOptions(productId, selectedSizes, selectedColors) {
   localStorage.setItem('sportstore_product_options', JSON.stringify(storedOptions));
 }
 
+function inferSizeType(sizes) {
+  return sizes.some((size) => Number.isFinite(Number(size))) ? 'shoes' : 'clothing';
+}
+
 export default function AdminPanel() {
   const products = useAsyncData(() => api.getProducts(), []);
   const categories = useAsyncData(() => api.getCategories(), []);
@@ -52,6 +56,7 @@ export default function AdminPanel() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
+  const [editingProductId, setEditingProductId] = useState(null);
 
   function updateProduct(key, value) {
     setProductForm((current) => {
@@ -117,25 +122,59 @@ export default function AdminPanel() {
     setBusy(true);
     setMessage('');
     try {
-      const createdProduct = await api.createProduct({
+      const payload = {
         name: productForm.name,
         brand: productForm.brand,
         price: Number(productForm.price),
         categoryId: Number(productForm.categoryId),
         size: productForm.selectedSizes[0]
-      });
+      };
 
-      saveProductOptions(createdProduct.id, productForm.selectedSizes, productForm.selectedColors);
-      setProductForm(initialProduct);
-      setPhotoPreviews({ main: '', additional: [] });
-      event.currentTarget.reset();
-      setMessage('Товар створено. Фото поки не відправляються на backend.');
+      const savedProduct = editingProductId
+        ? await api.updateProduct(editingProductId, payload)
+        : await api.createProduct(payload);
+
+      saveProductOptions(savedProduct.id, productForm.selectedSizes, productForm.selectedColors);
+      resetProductForm(event.currentTarget);
+      setMessage(
+        editingProductId
+          ? 'Товар оновлено. Фото поки не відправляються на backend.'
+          : 'Товар створено. Фото поки не відправляються на backend.'
+      );
       products.reload();
     } catch (err) {
-      setMessage(err.message || 'Не вдалося створити товар.');
+      setMessage(err.message || 'Не вдалося зберегти товар.');
     } finally {
       setBusy(false);
     }
+  }
+
+  function resetProductForm(formElement) {
+    setProductForm(initialProduct);
+    setEditingProductId(null);
+    setPhotoPreviews({ main: '', additional: [] });
+    formElement?.reset();
+  }
+
+  function startEdit(product) {
+    const storedOptions = getStoredProductOptions()[product.id] || {};
+    const selectedSizes = storedOptions.selectedSizes?.length
+      ? storedOptions.selectedSizes
+      : [product.size || 'M'];
+    const selectedColors = storedOptions.colors?.length ? storedOptions.colors : ['Чорний'];
+
+    setEditingProductId(product.id);
+    setProductForm({
+      name: product.name || '',
+      brand: product.brand || '',
+      price: product.price || '',
+      categoryId: product.categoryId || '',
+      sizeType: inferSizeType(selectedSizes),
+      selectedSizes,
+      selectedColors
+    });
+    setPhotoPreviews({ main: '', additional: [] });
+    setMessage(`Редагування товару #${product.id}`);
   }
 
   async function createCategory(event) {
@@ -181,7 +220,14 @@ export default function AdminPanel() {
 
       <div className="admin-grid">
         <form className="admin-form" onSubmit={createProduct}>
-          <h2>Новий товар</h2>
+          <div className="admin-form-heading">
+            <h2>{editingProductId ? `Редагування товару #${editingProductId}` : 'Новий товар'}</h2>
+            {editingProductId && (
+              <button className="icon-button" type="button" onClick={(event) => resetProductForm(event.currentTarget.form)}>
+                <X size={18} />
+              </button>
+            )}
+          </div>
           <label>
             Назва
             <input value={productForm.name} onChange={(event) => updateProduct('name', event.target.value)} required />
@@ -278,7 +324,7 @@ export default function AdminPanel() {
           )}
           <button className="primary-button full" type="submit" disabled={busy}>
             <Plus size={18} />
-            Додати товар
+            {editingProductId ? 'Зберегти зміни' : 'Додати товар'}
           </button>
         </form>
 
@@ -315,6 +361,10 @@ export default function AdminPanel() {
               <span>{product.brand}</span>
               <span>{product.size}</span>
               <span>{Number(product.price).toFixed(2)} грн</span>
+              <button className="ghost-button admin-edit-button" type="button" disabled={busy} onClick={() => startEdit(product)}>
+                <Pencil size={18} />
+                Редагувати
+              </button>
               <button className="icon-button danger" type="button" disabled={busy} onClick={() => deleteProduct(product.id)}>
                 <Trash2 size={18} />
               </button>

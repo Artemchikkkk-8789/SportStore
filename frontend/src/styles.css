@@ -601,11 +601,38 @@ textarea:focus {
   overflow: hidden;
 }
 
-.product-gallery img {
+.product-gallery > img {
   display: block;
   width: 100%;
-  height: 100%;
   min-height: 520px;
+  max-height: 620px;
+  object-fit: cover;
+}
+
+.product-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.product-thumbnails button {
+  overflow: hidden;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.product-thumbnails button.selected {
+  border-color: var(--accent);
+}
+
+.product-thumbnails img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -624,6 +651,12 @@ textarea:focus {
   color: var(--accent);
   font-size: 2rem;
   font-weight: 950;
+}
+
+.product-description {
+  margin: 16px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .spec-list {
@@ -1053,6 +1086,17 @@ textarea:focus {
   margin: 0 0 12px;
 }
 
+.admin-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-form-heading h2 {
+  margin: 0;
+}
+
 .admin-size-picker {
   display: grid;
   gap: 10px;
@@ -1125,7 +1169,7 @@ textarea:focus {
 
 .admin-row {
   display: grid;
-  grid-template-columns: 72px 1.5fr 1fr 80px 120px 48px;
+  grid-template-columns: 72px 1.5fr 1fr 80px 120px 130px 48px;
   align-items: center;
   gap: 12px;
   min-height: 66px;
@@ -1137,6 +1181,11 @@ textarea:focus {
 
 .admin-row span {
   color: var(--muted);
+}
+
+.admin-edit-button {
+  min-height: 42px;
+  padding: 8px 10px;
 }
 
 .site-footer {

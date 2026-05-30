@@ -82,6 +82,13 @@ export const api = {
     });
   },
 
+  updateProduct(id, payload) {
+    return request(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+
   deleteProduct(id) {
     return request(`/products/${id}`, {
       method: 'DELETE'

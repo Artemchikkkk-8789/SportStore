@@ -1,21 +1,23 @@
 import { ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
 import { getProductImage } from '../services/assets.js';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const location = useLocation();
   const image = getProductImage(product);
+  const currentCatalogPath = `${location.pathname}${location.search}`;
 
   return (
     <article className="product-card">
-      <Link className="product-image-link" to={`/products/${product.id}`}>
+      <Link className="product-image-link" to={`/products/${product.id}`} state={{ from: currentCatalogPath }}>
         <img src={image} alt={product.name} />
       </Link>
       <div className="product-card-body">
         <div>
           <p className="eyebrow">{product.brand || 'SportStore'}</p>
-          <Link className="product-title" to={`/products/${product.id}`}>
+          <Link className="product-title" to={`/products/${product.id}`} state={{ from: currentCatalogPath }}>
             {product.name}
           </Link>
           <p className="muted">Розмір: {product.size || 'універсальний'}</p>

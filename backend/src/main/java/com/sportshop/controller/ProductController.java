@@ -54,6 +54,21 @@ public List<ProductDto> getAll(
         return productMapper.toDTO(product);
     }
 
+    @PutMapping("/{id}")
+    public ProductDto update(@PathVariable Long id, @RequestBody ProductDto dto) {
+        Category category = categoryService.findById(dto.getCategoryId());
+        if (category == null) {
+            throw new RuntimeException("Category not found: " + dto.getCategoryId());
+        }
+
+        Product product = productMapper.toEntity(dto, category);
+        Product updated = productService.update(id, product);
+        if (updated == null) {
+            throw new RuntimeException("Product not found: " + id);
+        }
+        return productMapper.toDTO(updated);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         productService.deleteById(id);

@@ -42,6 +42,11 @@ export function getProductImage(product) {
   return categoryImages[(productId - 1) % categoryImages.length];
 }
 
+export function getProductGallery(product) {
+  const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
+  return categoryImages;
+}
+
 export function getCategoryImage(category) {
   const name = category?.name?.toLowerCase() || '';
   if (name.includes('фут') || name.includes('shirt')) return storeImages.categories.tshirts;

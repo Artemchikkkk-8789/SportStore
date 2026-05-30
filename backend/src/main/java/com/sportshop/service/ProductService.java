@@ -28,6 +28,21 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    public Product update(Long id, Product updatedProduct) {
+        Product existingProduct = findById(id);
+        if (existingProduct == null) {
+            return null;
+        }
+
+        existingProduct.setName(updatedProduct.getName());
+        existingProduct.setPrice(updatedProduct.getPrice());
+        existingProduct.setSize(updatedProduct.getSize());
+        existingProduct.setBrand(updatedProduct.getBrand());
+        existingProduct.setCategory(updatedProduct.getCategory());
+
+        return productRepository.save(existingProduct);
+    }
+
     public void deleteById(Long id) {
         productRepository.deleteById(id);
     }
