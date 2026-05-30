@@ -1,10 +1,8 @@
 import { ShoppingCart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useCart } from '../context/CartContext.jsx';
 import { getProductImage } from '../services/assets.js';
 
 export default function ProductCard({ product }) {
-  const { addToCart } = useCart();
   const location = useLocation();
   const image = getProductImage(product);
   const currentCatalogPath = `${location.pathname}${location.search}`;
@@ -24,14 +22,14 @@ export default function ProductCard({ product }) {
         </div>
         <div className="product-card-footer">
           <strong>{Number(product.price).toFixed(2)} грн</strong>
-          <button
+          <Link
             className="icon-button dark"
-            type="button"
-            title="Додати до кошика"
-            onClick={() => addToCart({ ...product, image })}
+            title="Перейти до товару"
+            to={`/products/${product.id}`}
+            state={{ from: currentCatalogPath }}
           >
             <ShoppingCart size={18} />
-          </button>
+          </Link>
         </div>
       </div>
     </article>

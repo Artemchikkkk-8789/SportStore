@@ -61,10 +61,15 @@ export default function ProductDetails() {
     }
 
     addToCart({
-      ...product,
+      id: product.id,
+      productId: product.id,
+      name: product.name,
+      brand: product.brand || 'SportStore',
+      price: product.price,
       image,
       selectedSize,
-      selectedColor
+      selectedColor,
+      quantity: 1
     });
     setAdded(true);
     setSelectionError('');

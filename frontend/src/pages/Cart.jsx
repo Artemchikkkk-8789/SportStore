@@ -39,7 +39,8 @@ const initialCheckout = {
 };
 
 function getCartItemKey(item) {
-  return item.cartKey || `${item.id}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
+  const productId = item.productId || item.id;
+  return item.cartKey || `${productId}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
 }
 
 export default function Cart() {
@@ -104,7 +105,9 @@ export default function Cart() {
     setSubmitting(true);
     setMessage('');
     try {
-      const productIds = items.flatMap((item) => Array.from({ length: item.quantity }, () => item.id));
+      const productIds = items.flatMap((item) =>
+        Array.from({ length: item.quantity }, () => item.productId || item.id)
+      );
       await api.createOrder(productIds);
 
       const deliveryInfo = {

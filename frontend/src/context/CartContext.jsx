@@ -4,16 +4,18 @@ import { useLocalStorage } from '../hooks/useLocalStorage.js';
 const CartContext = createContext(null);
 
 function getCartKey(item) {
-  return item.cartKey || `${item.id}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
+  const productId = item.productId || item.id;
+  return item.cartKey || `${productId}-${item.selectedSize || item.size || ''}-${item.selectedColor || ''}`;
 }
 
 export function CartProvider({ children }) {
   const [items, setItems] = useLocalStorage('sportstore_cart', []);
 
   function addToCart(product, quantity = 1) {
+    const productId = product.productId || product.id;
     const selectedSize = product.selectedSize || product.size || '';
     const selectedColor = product.selectedColor || '';
-    const cartKey = `${product.id}-${selectedSize}-${selectedColor}`;
+    const cartKey = `${productId}-${selectedSize}-${selectedColor}`;
 
     setItems((current) => {
       const existing = current.find((item) => getCartKey(item) === cartKey);
@@ -22,7 +24,7 @@ export function CartProvider({ children }) {
           getCartKey(item) === cartKey ? { ...item, quantity: item.quantity + quantity } : item
         );
       }
-      return [...current, { ...product, cartKey, selectedSize, selectedColor, quantity }];
+      return [...current, { ...product, id: productId, productId, cartKey, selectedSize, selectedColor, quantity }];
     });
   }
 
