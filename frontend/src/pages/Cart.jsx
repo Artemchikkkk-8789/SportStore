@@ -117,16 +117,18 @@ export default function Cart() {
         deliveryInfo.warehouse = checkoutForm.warehouse;
       }
 
-      localStorage.setItem(
-        'sportstore_last_checkout',
-        JSON.stringify({
-          deliveryInfo,
-          itemsTotal: total,
-          deliveryPrice: selectedDelivery.price,
-          total: grandTotal,
-          createdAt: new Date().toISOString()
-        })
-      );
+      const orderInfo = {
+        deliveryInfo,
+        itemsTotal: total,
+        deliveryPrice: selectedDelivery.price,
+        total: grandTotal,
+        createdAt: new Date().toISOString()
+      };
+      const storedOrders = JSON.parse(localStorage.getItem('sportstore_orders') || '[]');
+      const orders = Array.isArray(storedOrders) ? storedOrders : [];
+
+      localStorage.setItem('sportstore_last_checkout', JSON.stringify(orderInfo));
+      localStorage.setItem('sportstore_orders', JSON.stringify([orderInfo, ...orders]));
       clearCart();
       setCheckoutForm(initialCheckout);
       setMessage(
