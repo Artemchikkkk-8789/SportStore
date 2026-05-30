@@ -25,13 +25,10 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         createAdminUser();
 
-        productRepository.deleteAll();
-        categoryRepository.deleteAll();
-
-        Category tShirts = createCategory("Футболки");
-        Category shorts = createCategory("Шорти");
-        Category shoes = createCategory("Кросівки");
-        Category jackets = createCategory("Куртки");
+        Category tShirts = getOrCreateCategory("Футболки");
+        Category shorts = getOrCreateCategory("Шорти");
+        Category shoes = getOrCreateCategory("Кросівки");
+        Category jackets = getOrCreateCategory("Куртки");
 
         seedTShirts(tShirts);
         seedShorts(shorts);
@@ -75,6 +72,10 @@ public class DataSeeder implements CommandLineRunner {
         createProduct("Куртка Puma TeamLiga", "Puma", 2599, "XL", category);
     }
 
+    private Category getOrCreateCategory(String name) {
+        return categoryRepository.findByName(name).orElseGet(() -> createCategory(name));
+    }
+
     private Category createCategory(String name) {
         Category category = new Category();
         category.setName(name);
@@ -82,6 +83,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void createProduct(String name, String brand, double price, String size, Category category) {
+        if (productRepository.existsByNameAndSize(name, size)) {
+            return;
+        }
+
         Product product = new Product();
         product.setName(name);
         product.setBrand(brand);
