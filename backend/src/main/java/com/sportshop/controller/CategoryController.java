@@ -34,4 +34,16 @@ public class CategoryController {
         Category category = mapper.toEntity(dto);
         return mapper.toDTO(categoryService.save(category)); // ← ПРАВИЛЬНО
     }
+
+    @PutMapping("/{id}")
+    public CategoryDto update(@PathVariable Long id, @RequestBody CategoryDto dto) {
+        Category category = mapper.toEntity(dto);
+        category.setId(id);
+        return mapper.toDTO(categoryService.save(category));
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        categoryService.delete(id);
+    }
 }

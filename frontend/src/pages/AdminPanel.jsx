@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
 import { api } from '../services/api.js';
+import { ORDER_STATUSES, readStoredOrders, updateStoredOrderStatus } from '../services/orderStorage.js';
 
 const initialProduct = {
   name: '',
@@ -54,6 +55,9 @@ export default function AdminPanel() {
   const productFormRef = useRef(null);
   const [productForm, setProductForm] = useState(initialProduct);
   const [categoryName, setCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categoryEditName, setCategoryEditName] = useState('');
+  const [orders, setOrders] = useState(() => readStoredOrders());
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
@@ -197,6 +201,51 @@ export default function AdminPanel() {
     }
   }
 
+  function startCategoryEdit(category) {
+    setEditingCategoryId(category.id);
+    setCategoryEditName(category.name || '');
+    setMessage(`Редагування категорії #${category.id}`);
+  }
+
+  async function updateCategory() {
+    if (!categoryEditName.trim()) {
+      setMessage('Назва категорії не може бути порожньою.');
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.updateCategory(editingCategoryId, { name: categoryEditName.trim() });
+      setEditingCategoryId(null);
+      setCategoryEditName('');
+      setMessage('Категорію оновлено.');
+      categories.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося оновити категорію.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCategory(id) {
+    if (!window.confirm('Видалити категорію?')) {
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.deleteCategory(id);
+      setMessage('Категорію видалено.');
+      categories.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося видалити категорію.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteProduct(id) {
     setBusy(true);
     setMessage('');
@@ -212,6 +261,27 @@ export default function AdminPanel() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function changeOrderStatus(orderId, status) {
+    setOrders(updateStoredOrderStatus(orderId, status));
+    setMessage(`Статус замовлення #${orderId} змінено на "${status}".`);
+  }
+
+  function refreshOrders() {
+    setOrders(readStoredOrders());
+  }
+
+  function formatOrderDate(value) {
+    if (!value) return 'Дата не вказана';
+
+    return new Intl.DateTimeFormat('uk-UA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
   }
 
   return (
@@ -342,17 +412,120 @@ export default function AdminPanel() {
           {message && <p className="form-message">{message}</p>}
         </form>
 
-        <form className="admin-form" onSubmit={createCategory}>
-          <h2>Нова категорія</h2>
-          <label>
-            Назва категорії
-            <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} required />
-          </label>
-          <button className="ghost-button full" type="submit" disabled={busy}>
-            <Plus size={18} />
-            Додати категорію
-          </button>
-        </form>
+        <div className="admin-side-stack">
+          <form className="admin-form" onSubmit={createCategory}>
+            <h2>Нова категорія</h2>
+            <label>
+              Назва категорії
+              <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} required />
+            </label>
+            <button className="ghost-button full" type="submit" disabled={busy}>
+              <Plus size={18} />
+              Додати категорію
+            </button>
+          </form>
+
+          <section className="admin-form">
+            <div className="admin-form-heading">
+              <h2>Категорії</h2>
+              <button className="icon-button" type="button" onClick={categories.reload} disabled={busy}>
+                <RefreshCw size={18} />
+              </button>
+            </div>
+            <div className="admin-category-list">
+              {categories.data.map((category) => (
+                <div className="admin-category-row" key={category.id}>
+                  {editingCategoryId === category.id ? (
+                    <>
+                      <input
+                        value={categoryEditName}
+                        onChange={(event) => setCategoryEditName(event.target.value)}
+                        autoFocus
+                      />
+                      <button className="ghost-button" type="button" onClick={updateCategory} disabled={busy}>
+                        Зберегти
+                      </button>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        onClick={() => {
+                          setEditingCategoryId(null);
+                          setCategoryEditName('');
+                        }}
+                      >
+                        <X size={18} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <strong>{category.name}</strong>
+                      <button className="ghost-button" type="button" onClick={() => startCategoryEdit(category)} disabled={busy}>
+                        <Pencil size={18} />
+                        Редагувати
+                      </button>
+                      <button className="icon-button danger" type="button" onClick={() => deleteCategory(category.id)} disabled={busy}>
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="admin-form admin-orders-panel">
+            <div className="admin-form-heading">
+              <h2>Замовлення</h2>
+              <button className="icon-button" type="button" onClick={refreshOrders}>
+                <RefreshCw size={18} />
+              </button>
+            </div>
+            {orders.length === 0 ? (
+              <p className="empty-profile-note">Замовлень поки немає.</p>
+            ) : (
+              <div className="admin-orders-list">
+                {orders.map((order) => (
+                  <article className="admin-order-card" key={order.id}>
+                    <div>
+                      <span>ID</span>
+                      <strong>#{order.id}</strong>
+                    </div>
+                    <div>
+                      <span>Дата</span>
+                      <strong>{formatOrderDate(order.createdAt)}</strong>
+                    </div>
+                    <div>
+                      <span>Користувач</span>
+                      <strong>{order.username}</strong>
+                    </div>
+                    <div>
+                      <span>Сума</span>
+                      <strong>{Number(order.total || order.totalPrice || 0).toFixed(2)} грн</strong>
+                    </div>
+                    <div>
+                      <span>Місто</span>
+                      <strong>{order.deliveryInfo?.city || 'не вказано'}</strong>
+                    </div>
+                    <div>
+                      <span>Доставка</span>
+                      <strong>{order.deliveryInfo?.deliveryType || 'не вказана'}</strong>
+                    </div>
+                    <label>
+                      Статус
+                      <select value={order.status} onChange={(event) => changeOrderStatus(order.id, event.target.value)}>
+                        {ORDER_STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
       <div className="admin-list-heading">

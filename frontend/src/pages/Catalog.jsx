@@ -13,16 +13,42 @@ const emptyFilters = {
   maxPrice: ''
 };
 
+const sortOptions = [
+  { value: 'default', label: 'За замовчуванням' },
+  { value: 'price-asc', label: 'Ціна: від дешевих до дорогих' },
+  { value: 'price-desc', label: 'Ціна: від дорогих до дешевих' },
+  { value: 'name-asc', label: 'Назва: А–Я' },
+  { value: 'name-desc', label: 'Назва: Я–А' }
+];
+
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState(() => ({
     ...emptyFilters,
     categoryId: searchParams.get('categoryId') || ''
   }));
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('default');
 
   const categories = useAsyncData(() => api.getCategories(), []);
   const activeParams = useMemo(() => ({ ...filters }), [filters]);
   const products = useAsyncData(() => api.getProducts(activeParams), [activeParams]);
+  const visibleProducts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filteredProducts = normalizedQuery
+      ? products.data.filter((product) =>
+          `${product.name || ''} ${product.brand || ''}`.toLowerCase().includes(normalizedQuery)
+        )
+      : products.data;
+
+    return [...filteredProducts].sort((first, second) => {
+      if (sortBy === 'price-asc') return Number(first.price) - Number(second.price);
+      if (sortBy === 'price-desc') return Number(second.price) - Number(first.price);
+      if (sortBy === 'name-asc') return String(first.name || '').localeCompare(String(second.name || ''), 'uk');
+      if (sortBy === 'name-desc') return String(second.name || '').localeCompare(String(first.name || ''), 'uk');
+      return 0;
+    });
+  }, [products.data, searchQuery, sortBy]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -52,14 +78,38 @@ export default function Catalog() {
       />
 
       <div className="catalog-results">
+        <div className="catalog-toolbar">
+          <label>
+            Пошук
+            <input
+              type="search"
+              value={searchQuery}
+              placeholder="Назва товару або бренд"
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </label>
+          <label>
+            Сортування
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         {products.loading && <StateBlock title="Завантаження товарів..." />}
         {products.error && <StateBlock title="Не вдалося завантажити каталог" text={products.error} />}
-        {!products.loading && !products.error && products.data.length === 0 && (
-          <StateBlock title="Товарів не знайдено" text="Спробуйте змінити фільтри або додайте нові позиції в адмін-панелі." />
+        {!products.loading && !products.error && visibleProducts.length === 0 && (
+          <StateBlock
+            title={searchQuery.trim() ? 'Товарів за вашим запитом не знайдено' : 'Товарів не знайдено'}
+            text="Спробуйте змінити пошук, фільтри або додайте нові позиції в адмін-панелі."
+          />
         )}
-        {!products.loading && !products.error && products.data.length > 0 && (
+        {!products.loading && !products.error && visibleProducts.length > 0 && (
           <div className="products-grid">
-            {products.data.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

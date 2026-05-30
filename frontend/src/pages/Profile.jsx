@@ -2,20 +2,7 @@ import { CalendarDays, CreditCard, LogOut, MapPin, PackageCheck, ShieldCheck, Sh
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
-
-function readStoredOrders() {
-  try {
-    const orders = JSON.parse(localStorage.getItem('sportstore_orders') || '[]');
-    if (Array.isArray(orders) && orders.length > 0) {
-      return orders;
-    }
-
-    const lastCheckout = JSON.parse(localStorage.getItem('sportstore_last_checkout') || 'null');
-    return lastCheckout ? [lastCheckout] : [];
-  } catch {
-    return [];
-  }
-}
+import { getOrderStatusClass, readStoredOrders } from '../services/orderStorage.js';
 
 function formatDate(value) {
   if (!value) {
@@ -59,7 +46,9 @@ function formatDeliveryAddress(deliveryInfo) {
 export default function Profile() {
   const { user, isAdmin, logout } = useAuth();
   const { count, total } = useCart();
-  const orders = readStoredOrders();
+  const orders = readStoredOrders().filter(
+    (order) => !order.username || order.username === 'Користувач' || order.username === user?.username
+  );
   const lastOrder = orders[0];
   const lastDelivery = lastOrder?.deliveryInfo;
 
@@ -166,7 +155,7 @@ export default function Profile() {
             {orders.map((order, index) => (
               <article className="order-card" key={`${order.createdAt || 'order'}-${index}`}>
                 <div>
-                  <span>Замовлення #{orders.length - index}</span>
+                  <span>Замовлення #{order.id || orders.length - index}</span>
                   <strong>{Number(order.total || 0).toFixed(2)} грн</strong>
                 </div>
                 <p>
@@ -188,6 +177,11 @@ export default function Profile() {
                 <p>
                   <PackageCheck size={16} />
                   Служба доставки: {order.deliveryInfo?.deliveryType || 'не вказана'}
+                </p>
+                <p>
+                  <span className={`status-badge ${getOrderStatusClass(order.status)}`}>
+                    {order.status || 'НОВЕ'}
+                  </span>
                 </p>
                 <p>
                   <CreditCard size={16} />

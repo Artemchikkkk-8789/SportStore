@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { deliveryData, deliveryTimeByCity, dispatchCity } from '../data/deliveryData.js';
 import { api } from '../services/api.js';
+import { addStoredOrder } from '../services/orderStorage.js';
 import { useState } from 'react';
 
 const deliveryOptions = [
@@ -45,7 +46,7 @@ function getCartItemKey(item) {
 
 export default function Cart() {
   const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState(initialCheckout);
@@ -108,7 +109,7 @@ export default function Cart() {
       const productIds = items.flatMap((item) =>
         Array.from({ length: item.quantity }, () => item.productId || item.id)
       );
-      await api.createOrder(productIds);
+      const createdOrder = await api.createOrder(productIds);
 
       const deliveryInfo = {
         fullName: checkoutForm.fullName,
@@ -128,17 +129,17 @@ export default function Cart() {
       }
 
       const orderInfo = {
+        id: createdOrder?.id || `local-${Date.now()}`,
+        username: user?.username || 'Користувач',
+        status: 'НОВЕ',
         deliveryInfo,
         itemsTotal: total,
         deliveryPrice: selectedDelivery.price,
         total: grandTotal,
         createdAt: new Date().toISOString()
       };
-      const storedOrders = JSON.parse(localStorage.getItem('sportstore_orders') || '[]');
-      const orders = Array.isArray(storedOrders) ? storedOrders : [];
 
-      localStorage.setItem('sportstore_last_checkout', JSON.stringify(orderInfo));
-      localStorage.setItem('sportstore_orders', JSON.stringify([orderInfo, ...orders]));
+      addStoredOrder(orderInfo);
       clearCart();
       setCheckoutForm(initialCheckout);
       setMessage(
