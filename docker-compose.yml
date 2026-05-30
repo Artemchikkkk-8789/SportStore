@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: sportstore
       POSTGRES_USER: sportstore
       POSTGRES_PASSWORD: sportstore123
+      TZ: UTC
+      PGTZ: UTC
     ports:
       - "5432:5432"
     volumes:
