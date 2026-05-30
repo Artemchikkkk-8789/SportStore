@@ -50,7 +50,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/categories", "/categories/**").hasAuthority("ROLE_ADMIN")
 
                         // ===== ORDERS =====
-                        .requestMatchers("/orders/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/orders").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/orders/my").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/orders", "/orders/*").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/orders/*/status").hasAuthority("ROLE_ADMIN")
 
                         // інше — обов’язково з JWT
                         .anyRequest().authenticated()

@@ -1,8 +1,11 @@
 import { CalendarDays, CreditCard, LogOut, MapPin, PackageCheck, ShieldCheck, ShoppingBag, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import StateBlock from '../components/StateBlock.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
-import { getOrderStatusClass, readStoredOrders } from '../services/orderStorage.js';
+import { useAsyncData } from '../hooks/useAsyncData.js';
+import { api } from '../services/api.js';
+import { getOrderStatusClass } from '../services/orderStorage.js';
 
 function formatDate(value) {
   if (!value) {
@@ -18,46 +21,19 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function formatDeliveryAddress(deliveryInfo) {
-  if (!deliveryInfo) {
-    return 'Адреса ще не збережена';
-  }
-
-  if (deliveryInfo.warehouse) {
-    return deliveryInfo.warehouse;
-  }
-
-  const address = deliveryInfo.courierAddress;
-  if (!address) {
-    return 'Адреса ще не збережена';
-  }
-
-  return [
-    address.street && `вул. ${address.street}`,
-    address.building && `буд. ${address.building}`,
-    address.entrance && `під’їзд ${address.entrance}`,
-    address.floor && `поверх ${address.floor}`,
-    address.apartment && `кв. ${address.apartment}`
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
-
 export default function Profile() {
   const { user, isAdmin, logout } = useAuth();
   const { count, total } = useCart();
-  const orders = readStoredOrders().filter(
-    (order) => !order.username || order.username === 'Користувач' || order.username === user?.username
-  );
-  const lastOrder = orders[0];
-  const lastDelivery = lastOrder?.deliveryInfo;
+  const orders = useAsyncData(() => api.getMyOrders(), []);
+  const orderList = orders.data || [];
+  const lastOrder = orderList[0];
 
   return (
     <section className="container profile-page">
       <div className="page-heading">
         <p className="eyebrow">Профіль</p>
         <h1>Кабінет користувача</h1>
-        <p>Дані акаунта беруться з JWT, а локальна історія оформлень зберігається у браузері.</p>
+        <p>Дані акаунта беруться з JWT, а історія замовлень завантажується з backend.</p>
       </div>
 
       <div className="profile-summary-grid">
@@ -106,35 +82,35 @@ export default function Profile() {
             <MapPin size={22} />
             <h2>Остання адреса доставки</h2>
           </div>
-          {lastDelivery ? (
+          {lastOrder ? (
             <dl className="profile-details-list">
               <div>
                 <dt>ПІБ</dt>
-                <dd>{lastDelivery.fullName}</dd>
+                <dd>{lastOrder.fullName}</dd>
               </div>
               <div>
                 <dt>Телефон</dt>
-                <dd>{lastDelivery.phone}</dd>
+                <dd>{lastOrder.phone}</dd>
               </div>
               <div>
                 <dt>Місто</dt>
-                <dd>{lastDelivery.city}</dd>
+                <dd>{lastOrder.city}</dd>
               </div>
               <div>
                 <dt>Доставка</dt>
-                <dd>{lastDelivery.deliveryType}</dd>
+                <dd>{lastOrder.deliveryService}</dd>
               </div>
               <div>
                 <dt>Відправлення</dt>
-                <dd>{lastDelivery.dispatchCity || 'Тернопіль'}</dd>
+                <dd>{lastOrder.dispatchCity || 'Тернопіль'}</dd>
               </div>
               <div>
                 <dt>Час доставки</dt>
-                <dd>{lastDelivery.estimatedDeliveryTime || 'уточнюється'}</dd>
+                <dd>{lastOrder.estimatedDeliveryTime || 'уточнюється'}</dd>
               </div>
               <div>
                 <dt>Адреса</dt>
-                <dd>{formatDeliveryAddress(lastDelivery)}</dd>
+                <dd>{lastOrder.address || 'Адреса ще не збережена'}</dd>
               </div>
             </dl>
           ) : (
@@ -148,15 +124,18 @@ export default function Profile() {
           <PackageCheck size={22} />
           <h2>Мої замовлення</h2>
         </div>
-        {orders.length === 0 ? (
+        {orders.loading && <StateBlock title="Завантаження замовлень..." />}
+        {orders.error && <StateBlock title="Не вдалося завантажити замовлення" text={orders.error} />}
+        {!orders.loading && !orders.error && orderList.length === 0 ? (
           <p className="empty-profile-note">У вас ще немає замовлень</p>
-        ) : (
+        ) : null}
+        {!orders.loading && !orders.error && orderList.length > 0 && (
           <div className="orders-list">
-            {orders.map((order, index) => (
+            {orderList.map((order, index) => (
               <article className="order-card" key={`${order.createdAt || 'order'}-${index}`}>
                 <div>
-                  <span>Замовлення #{order.id || orders.length - index}</span>
-                  <strong>{Number(order.total || 0).toFixed(2)} грн</strong>
+                  <span>Замовлення #{order.id}</span>
+                  <strong>{Number(order.totalPrice || 0).toFixed(2)} грн</strong>
                 </div>
                 <p>
                   <CalendarDays size={16} />
@@ -164,28 +143,28 @@ export default function Profile() {
                 </p>
                 <p>
                   <MapPin size={16} />
-                  Звідки відправлено: {order.deliveryInfo?.dispatchCity || 'Тернопіль'}
+                  Звідки відправлено: {order.dispatchCity || 'Тернопіль'}
                 </p>
                 <p>
                   <CalendarDays size={16} />
-                  Орієнтовний час: {order.deliveryInfo?.estimatedDeliveryTime || 'уточнюється'}
+                  Орієнтовний час: {order.estimatedDeliveryTime || 'уточнюється'}
                 </p>
                 <p>
                   <MapPin size={16} />
-                  Місто доставки: {order.deliveryInfo?.city || 'не вказано'}
+                  Місто доставки: {order.city || 'не вказано'}
                 </p>
                 <p>
                   <PackageCheck size={16} />
-                  Служба доставки: {order.deliveryInfo?.deliveryType || 'не вказана'}
+                  Служба доставки: {order.deliveryService || 'не вказана'}
                 </p>
                 <p>
                   <span className={`status-badge ${getOrderStatusClass(order.status)}`}>
-                    {order.status || 'НОВЕ'}
+                    {order.status || 'NEW'}
                   </span>
                 </p>
                 <p>
                   <CreditCard size={16} />
-                  {order.deliveryInfo?.paymentType || 'Оплата не вказана'}
+                  {order.paymentMethod || 'Оплата не вказана'}
                 </p>
               </article>
             ))}

@@ -68,10 +68,25 @@ export const api = {
     });
   },
 
-  createOrder(productIds) {
+  createOrder(payload) {
     return request('/orders', {
       method: 'POST',
-      body: JSON.stringify({ productIds })
+      body: JSON.stringify(payload)
+    });
+  },
+
+  getOrders() {
+    return request('/orders');
+  },
+
+  getMyOrders() {
+    return request('/orders/my');
+  },
+
+  updateOrderStatus(id, status) {
+    return request(`/orders/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
     });
   },
 

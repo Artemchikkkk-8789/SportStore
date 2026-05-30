@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
 import { api } from '../services/api.js';
-import { ORDER_STATUSES, readStoredOrders, updateStoredOrderStatus } from '../services/orderStorage.js';
+import { ORDER_STATUSES } from '../services/orderStorage.js';
 
 const initialProduct = {
   name: '',
@@ -57,7 +57,7 @@ export default function AdminPanel() {
   const [categoryName, setCategoryName] = useState('');
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [categoryEditName, setCategoryEditName] = useState('');
-  const [orders, setOrders] = useState(() => readStoredOrders());
+  const orders = useAsyncData(() => api.getOrders(), []);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
@@ -263,13 +263,18 @@ export default function AdminPanel() {
     }
   }
 
-  function changeOrderStatus(orderId, status) {
-    setOrders(updateStoredOrderStatus(orderId, status));
-    setMessage(`Статус замовлення #${orderId} змінено на "${status}".`);
-  }
-
-  function refreshOrders() {
-    setOrders(readStoredOrders());
+  async function changeOrderStatus(orderId, status) {
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.updateOrderStatus(orderId, status);
+      setMessage(`Статус замовлення #${orderId} змінено на "${status}".`);
+      orders.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося змінити статус замовлення.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function formatOrderDate(value) {
@@ -289,7 +294,7 @@ export default function AdminPanel() {
       <div className="page-heading">
         <p className="eyebrow">Адмін-панель</p>
         <h1>Керування SportStore</h1>
-        <p>Панель працює з існуючими ADMIN endpoint-ами backend: товари та категорії.</p>
+        <p>Панель працює з backend endpoint-ами для товарів, категорій і замовлень.</p>
       </div>
 
       <div className="admin-grid">
@@ -476,15 +481,18 @@ export default function AdminPanel() {
           <section className="admin-form admin-orders-panel">
             <div className="admin-form-heading">
               <h2>Замовлення</h2>
-              <button className="icon-button" type="button" onClick={refreshOrders}>
+              <button className="icon-button" type="button" onClick={orders.reload}>
                 <RefreshCw size={18} />
               </button>
             </div>
-            {orders.length === 0 ? (
+            {orders.loading && <StateBlock title="Завантаження замовлень..." />}
+            {orders.error && <StateBlock title="Не вдалося завантажити замовлення" text={orders.error} />}
+            {!orders.loading && !orders.error && orders.data.length === 0 ? (
               <p className="empty-profile-note">Замовлень поки немає.</p>
-            ) : (
+            ) : null}
+            {!orders.loading && !orders.error && orders.data.length > 0 && (
               <div className="admin-orders-list">
-                {orders.map((order) => (
+                {orders.data.map((order) => (
                   <article className="admin-order-card" key={order.id}>
                     <div>
                       <span>ID</span>
@@ -500,19 +508,23 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <span>Сума</span>
-                      <strong>{Number(order.total || order.totalPrice || 0).toFixed(2)} грн</strong>
+                      <strong>{Number(order.totalPrice || 0).toFixed(2)} грн</strong>
                     </div>
                     <div>
                       <span>Місто</span>
-                      <strong>{order.deliveryInfo?.city || 'не вказано'}</strong>
+                      <strong>{order.city || 'не вказано'}</strong>
                     </div>
                     <div>
                       <span>Доставка</span>
-                      <strong>{order.deliveryInfo?.deliveryType || 'не вказана'}</strong>
+                      <strong>{order.deliveryService || 'не вказана'}</strong>
                     </div>
                     <label>
                       Статус
-                      <select value={order.status} onChange={(event) => changeOrderStatus(order.id, event.target.value)}>
+                      <select
+                        value={order.status}
+                        onChange={(event) => changeOrderStatus(order.id, event.target.value)}
+                        disabled={busy}
+                      >
                         {ORDER_STATUSES.map((status) => (
                           <option key={status} value={status}>
                             {status}

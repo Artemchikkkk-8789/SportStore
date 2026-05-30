@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { deliveryData, deliveryTimeByCity, dispatchCity } from '../data/deliveryData.js';
 import { api } from '../services/api.js';
-import { addStoredOrder } from '../services/orderStorage.js';
 import { useState } from 'react';
 
 const deliveryOptions = [
@@ -46,7 +45,7 @@ function getCartItemKey(item) {
 
 export default function Cart() {
   const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState(initialCheckout);
@@ -109,41 +108,36 @@ export default function Cart() {
       const productIds = items.flatMap((item) =>
         Array.from({ length: item.quantity }, () => item.productId || item.id)
       );
-      const createdOrder = await api.createOrder(productIds);
+      const address = isCourierDelivery
+        ? [
+            checkoutForm.courierAddress.street && `вул. ${checkoutForm.courierAddress.street}`,
+            checkoutForm.courierAddress.building && `буд. ${checkoutForm.courierAddress.building}`,
+            checkoutForm.courierAddress.entrance && `під’їзд ${checkoutForm.courierAddress.entrance}`,
+            checkoutForm.courierAddress.floor && `поверх ${checkoutForm.courierAddress.floor}`,
+            checkoutForm.courierAddress.apartment && `кв. ${checkoutForm.courierAddress.apartment}`
+          ]
+            .filter(Boolean)
+            .join(', ')
+        : checkoutForm.warehouse;
 
-      const deliveryInfo = {
+      const orderPayload = {
         fullName: checkoutForm.fullName,
         phone: `+380${checkoutForm.phone}`,
         city: checkoutForm.city,
-        deliveryType: selectedDelivery.label,
+        address,
+        deliveryService: selectedDelivery.label,
+        paymentMethod: checkoutForm.payment,
         dispatchCity,
         estimatedDeliveryTime,
-        paymentType: checkoutForm.payment,
-        comment: checkoutForm.comment
+        totalPrice: grandTotal,
+        productIds
       };
 
-      if (isCourierDelivery) {
-        deliveryInfo.courierAddress = checkoutForm.courierAddress;
-      } else {
-        deliveryInfo.warehouse = checkoutForm.warehouse;
-      }
-
-      const orderInfo = {
-        id: createdOrder?.id || `local-${Date.now()}`,
-        username: user?.username || 'Користувач',
-        status: 'НОВЕ',
-        deliveryInfo,
-        itemsTotal: total,
-        deliveryPrice: selectedDelivery.price,
-        total: grandTotal,
-        createdAt: new Date().toISOString()
-      };
-
-      addStoredOrder(orderInfo);
+      await api.createOrder(orderPayload);
       clearCart();
       setCheckoutForm(initialCheckout);
       setMessage(
-        `Замовлення успішно оформлено для ${deliveryInfo.fullName}. Телефон: ${deliveryInfo.phone}. Доставка: ${deliveryInfo.deliveryType}, оплата: ${deliveryInfo.paymentType}. Загальна сума: ${grandTotal.toFixed(2)} грн.`
+        `Замовлення успішно оформлено для ${orderPayload.fullName}. Телефон: ${orderPayload.phone}. Доставка: ${orderPayload.deliveryService}, оплата: ${orderPayload.paymentMethod}. Загальна сума: ${grandTotal.toFixed(2)} грн.`
       );
     } catch (err) {
       setMessage(err.message || 'Не вдалося оформити замовлення.');
@@ -386,7 +380,7 @@ export default function Cart() {
           <p className="checkout-note">
             Відправлення з м. {dispatchCity}
             {estimatedDeliveryTime ? ` · орієнтовний час доставки: ${estimatedDeliveryTime}` : ''}.
-            На backend поки передаються тільки ID товарів.
+            Дані замовлення зберігаються на backend.
           </p>
           <button className="primary-button full" type="submit" disabled={submitting}>
             {submitting ? 'Оформлення...' : 'Підтвердити замовлення'}
