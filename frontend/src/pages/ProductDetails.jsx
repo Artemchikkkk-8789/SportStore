@@ -9,13 +9,9 @@ import { getProductGallery, getProductImage } from '../services/assets.js';
 
 const fallbackColors = ['Чорний', 'Білий', 'Сірий'];
 
-function getStoredProductOptions(productId) {
-  try {
-    const options = JSON.parse(localStorage.getItem('sportstore_product_options') || '{}');
-    return options[productId] || null;
-  } catch {
-    return null;
-  }
+function normalizeOptions(values, fallback = []) {
+  const source = Array.isArray(values) ? values : fallback;
+  return [...new Set(source.filter(Boolean))];
 }
 
 function getProductDescription(product, categoryName) {
@@ -41,9 +37,8 @@ export default function ProductDetails() {
   const image = getProductImage(product);
   const gallery = getProductGallery(product);
   const activeImage = gallery.includes(selectedImage) ? selectedImage : image;
-  const storedOptions = getStoredProductOptions(product.id);
-  const sizes = storedOptions?.selectedSizes?.length ? storedOptions.selectedSizes : [product.size || 'універсальний'];
-  const colors = storedOptions?.colors?.length ? storedOptions.colors : fallbackColors;
+  const sizes = normalizeOptions(product.sizes, [product.size || 'універсальний']);
+  const colors = normalizeOptions(product.colors, fallbackColors);
   const category = categories.data.find((item) => item.id === product.categoryId);
   const categoryName = category?.name || `Категорія #${product.categoryId || 'без категорії'}`;
   const backTo = location.state?.from || `/catalog${product.categoryId ? `?categoryId=${product.categoryId}` : ''}`;

@@ -7,6 +7,7 @@ import com.sportshop.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -37,8 +38,26 @@ public class ProductService {
         existingProduct.setName(updatedProduct.getName());
         existingProduct.setPrice(updatedProduct.getPrice());
         existingProduct.setSize(updatedProduct.getSize());
+        existingProduct.setSizes(copyList(updatedProduct.getSizes()));
+        existingProduct.setColors(copyList(updatedProduct.getColors()));
         existingProduct.setBrand(updatedProduct.getBrand());
         existingProduct.setCategory(updatedProduct.getCategory());
+
+        return productRepository.save(existingProduct);
+    }
+
+    public Product updateImages(Long id, String mainImage, List<String> galleryImages) {
+        Product existingProduct = findById(id);
+        if (existingProduct == null) {
+            return null;
+        }
+
+        if (mainImage != null) {
+            existingProduct.setMainImage(mainImage);
+        }
+        if (galleryImages != null) {
+            existingProduct.setGalleryImages(galleryImages);
+        }
 
         return productRepository.save(existingProduct);
     }
@@ -81,5 +100,9 @@ public class ProductService {
         }
 
         return products;
+    }
+
+    private List<String> copyList(List<String> values) {
+        return values == null ? new ArrayList<>() : new ArrayList<>(values);
     }
 }

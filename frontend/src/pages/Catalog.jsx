@@ -21,6 +21,46 @@ const sortOptions = [
   { value: 'name-desc', label: 'Назва: Я–А' }
 ];
 
+function productIdentity(product) {
+  return [
+    String(product.name || '').trim().toLowerCase(),
+    String(product.brand || '').trim().toLowerCase(),
+    String(product.categoryId || ''),
+    String(product.price || '')
+  ].join('|');
+}
+
+function hasBackendImages(product) {
+  return Boolean(product.mainImage || product.galleryImages?.length);
+}
+
+function mergeOptions(products, key, legacyKey) {
+  return [
+    ...new Set(
+      products
+        .flatMap((product) => (Array.isArray(product[key]) && product[key].length ? product[key] : [product[legacyKey]]))
+        .filter(Boolean)
+    )
+  ];
+}
+
+function mergeProductVariants(products) {
+  const groups = new Map();
+  products.forEach((product) => {
+    const key = productIdentity(product);
+    groups.set(key, [...(groups.get(key) || []), product]);
+  });
+
+  return [...groups.values()].map((group) => {
+    const displayProduct = group.find(hasBackendImages) || group[0];
+    return {
+      ...displayProduct,
+      sizes: mergeOptions(group, 'sizes', 'size'),
+      colors: mergeOptions(group, 'colors', 'color')
+    };
+  });
+}
+
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState(() => ({
@@ -35,11 +75,12 @@ export default function Catalog() {
   const products = useAsyncData(() => api.getProducts(activeParams), [activeParams]);
   const visibleProducts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const catalogProducts = mergeProductVariants(products.data);
     const filteredProducts = normalizedQuery
-      ? products.data.filter((product) =>
+      ? catalogProducts.filter((product) =>
           `${product.name || ''} ${product.brand || ''}`.toLowerCase().includes(normalizedQuery)
         )
-      : products.data;
+      : catalogProducts;
 
     return [...filteredProducts].sort((first, second) => {
       if (sortBy === 'price-asc') return Number(first.price) - Number(second.price);

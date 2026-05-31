@@ -1,14 +1,19 @@
 package com.sportshop.controller;
 
+import com.sportshop.dto.ProductImagesDto;
 import com.sportshop.dto.ProductDto;
 import com.sportshop.entity.Category;
 import com.sportshop.entity.Product;
 import com.sportshop.mapper.ProductMapper;
 import com.sportshop.service.CategoryService;
+import com.sportshop.service.FileStorageService;
 import com.sportshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -19,6 +24,7 @@ public class ProductController {
     private final ProductService productService;
     private final CategoryService categoryService;
     private final ProductMapper productMapper;
+    private final FileStorageService fileStorageService;
 
     @PostMapping
     public ProductDto createProduct(@RequestBody ProductDto dto) {
@@ -72,5 +78,30 @@ public List<ProductDto> getAll(
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         productService.deleteById(id);
+    }
+
+    @PostMapping("/{id}/images")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ProductImagesDto uploadImages(
+            @PathVariable Long id,
+            @RequestParam(value = "mainImage", required = false) MultipartFile mainImage,
+            @RequestParam(value = "galleryImages", required = false) List<MultipartFile> galleryImages
+    ) {
+        Product product = productService.findById(id);
+        if (product == null) {
+            throw new RuntimeException("Product not found: " + id);
+        }
+
+        String mainImageUrl = fileStorageService.saveProductImage(id, mainImage);
+        List<String> galleryImageUrls = new ArrayList<>();
+        if (galleryImages != null) {
+            galleryImageUrls = galleryImages.stream()
+                    .map(file -> fileStorageService.saveProductImage(id, file))
+                    .filter(url -> url != null)
+                    .toList();
+        }
+
+        Product updated = productService.updateImages(id, mainImageUrl, galleryImageUrls);
+        return new ProductImagesDto(updated.getMainImage(), updated.getGalleryImages());
     }
 }

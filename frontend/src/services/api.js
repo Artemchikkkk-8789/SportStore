@@ -5,8 +5,9 @@ function getToken() {
 }
 
 async function request(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {})
   };
 
@@ -98,6 +99,28 @@ export const api = {
     return request('/products', {
       method: 'POST',
       body: JSON.stringify(payload)
+    });
+  },
+
+  uploadProductImages(id, mainImage, galleryImages = []) {
+    const formData = new FormData();
+    if (mainImage) {
+      formData.append('mainImage', mainImage);
+    }
+    galleryImages.forEach((image) => {
+      formData.append('galleryImages', image);
+    });
+
+    const headers = {};
+    const token = getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return request(`/products/${id}/images`, {
+      method: 'POST',
+      headers,
+      body: formData
     });
   },
 

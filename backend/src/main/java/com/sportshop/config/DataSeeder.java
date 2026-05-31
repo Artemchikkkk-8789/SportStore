@@ -12,6 +12,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
@@ -49,27 +51,27 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedTShirts(Category category) {
-        createProduct("Футболка Nike Dri-FIT Academy", "Nike", 799, "M", category);
-        createProduct("Футболка Adidas Training Essentials", "Adidas", 749, "L", category);
-        createProduct("Футболка Puma Active Tee", "Puma", 620, "S", category);
+        createProduct("Футболка Nike Dri-FIT Academy", "Nike", 799, List.of("S", "M", "L", "XL"), List.of("Чорний", "Білий"), category);
+        createProduct("Футболка Adidas Training Essentials", "Adidas", 749, List.of("XS", "S", "M", "L"), List.of("Синій", "Білий"), category);
+        createProduct("Футболка Puma Active Tee", "Puma", 620, List.of("S", "M", "L"), List.of("Чорний", "Сірий"), category);
     }
 
     private void seedShorts(Category category) {
-        createProduct("Шорти Nike Park III", "Nike", 699, "M", category);
-        createProduct("Шорти Adidas Entrada 22", "Adidas", 650, "L", category);
-        createProduct("Шорти Under Armour Tech", "Under Armour", 820, "XL", category);
+        createProduct("Шорти Nike Park III", "Nike", 699, List.of("S", "M", "L", "XL"), List.of("Чорний", "Синій"), category);
+        createProduct("Шорти Adidas Entrada 22", "Adidas", 650, List.of("S", "M", "L"), List.of("Чорний", "Білий"), category);
+        createProduct("Шорти Under Armour Tech", "Under Armour", 820, List.of("M", "L", "XL", "XXL"), List.of("Сірий", "Чорний"), category);
     }
 
     private void seedShoes(Category category) {
-        createProduct("Кросівки Nike Revolution 7", "Nike", 2499, "42", category);
-        createProduct("Кросівки Adidas Runfalcon 3", "Adidas", 2299, "43", category);
-        createProduct("Кросівки Puma Flyer Runner", "Puma", 1999, "41", category);
+        createProduct("Кросівки Nike Revolution 7", "Nike", 2499, List.of("40", "41", "42", "43", "44"), List.of("Чорний", "Білий"), category);
+        createProduct("Кросівки Adidas Runfalcon 3", "Adidas", 2299, List.of("39", "40", "41", "42", "43"), List.of("Синій", "Білий"), category);
+        createProduct("Кросівки Puma Flyer Runner", "Puma", 1999, List.of("40", "41", "42", "43", "44"), List.of("Чорний", "Зелений"), category);
     }
 
     private void seedJackets(Category category) {
-        createProduct("Куртка Nike Windrunner", "Nike", 3299, "L", category);
-        createProduct("Куртка Adidas Tiro 24", "Adidas", 2899, "M", category);
-        createProduct("Куртка Puma TeamLiga", "Puma", 2599, "XL", category);
+        createProduct("Куртка Nike Windrunner", "Nike", 3299, List.of("M", "L", "XL"), List.of("Чорний", "Синій"), category);
+        createProduct("Куртка Adidas Tiro 24", "Adidas", 2899, List.of("S", "M", "L", "XL"), List.of("Чорний", "Сірий"), category);
+        createProduct("Куртка Puma TeamLiga", "Puma", 2599, List.of("M", "L", "XL", "XXL"), List.of("Чорний", "Червоний"), category);
     }
 
     private Category getOrCreateCategory(String name) {
@@ -82,8 +84,8 @@ public class DataSeeder implements CommandLineRunner {
         return categoryRepository.save(category);
     }
 
-    private void createProduct(String name, String brand, double price, String size, Category category) {
-        if (productRepository.existsByNameAndSize(name, size)) {
+    private void createProduct(String name, String brand, double price, List<String> sizes, List<String> colors, Category category) {
+        if (productRepository.existsByNameAndBrandAndCategory(name, brand, category)) {
             return;
         }
 
@@ -91,7 +93,9 @@ public class DataSeeder implements CommandLineRunner {
         product.setName(name);
         product.setBrand(brand);
         product.setPrice(price);
-        product.setSize(size);
+        product.setSizes(sizes);
+        product.setColors(colors);
+        product.setSize(sizes.get(0));
         product.setCategory(category);
         productRepository.save(product);
     }

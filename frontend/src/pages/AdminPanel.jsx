@@ -28,23 +28,6 @@ const sizeOptions = {
 
 const colorOptions = ['Чорний', 'Білий', 'Сірий', 'Синій', 'Червоний', 'Зелений'];
 
-function getStoredProductOptions() {
-  try {
-    return JSON.parse(localStorage.getItem('sportstore_product_options') || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveProductOptions(productId, selectedSizes, selectedColors) {
-  const storedOptions = getStoredProductOptions();
-  storedOptions[productId] = {
-    selectedSizes,
-    colors: selectedColors
-  };
-  localStorage.setItem('sportstore_product_options', JSON.stringify(storedOptions));
-}
-
 function inferSizeType(sizes) {
   return sizes.some((size) => Number.isFinite(Number(size))) ? 'shoes' : 'clothing';
 }
@@ -62,6 +45,7 @@ export default function AdminPanel() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
+  const [photoFiles, setPhotoFiles] = useState({ main: null, additional: [] });
   const [editingProductId, setEditingProductId] = useState(null);
 
   function updateProduct(key, value) {
@@ -100,6 +84,10 @@ export default function AdminPanel() {
 
   function updateMainPhoto(event) {
     const file = event.target.files?.[0];
+    setPhotoFiles((current) => ({
+      ...current,
+      main: file || null
+    }));
     setPhotoPreviews((current) => ({
       ...current,
       main: file ? URL.createObjectURL(file) : ''
@@ -108,6 +96,10 @@ export default function AdminPanel() {
 
   function updateAdditionalPhotos(event) {
     const files = Array.from(event.target.files || []);
+    setPhotoFiles((current) => ({
+      ...current,
+      additional: files
+    }));
     setPhotoPreviews((current) => ({
       ...current,
       additional: files.map((file) => URL.createObjectURL(file))
@@ -133,21 +125,35 @@ export default function AdminPanel() {
         brand: productForm.brand,
         price: Number(productForm.price),
         categoryId: Number(productForm.categoryId),
-        size: productForm.selectedSizes[0]
+        size: productForm.selectedSizes[0],
+        sizes: productForm.selectedSizes,
+        colors: productForm.selectedColors
       };
 
       const savedProduct = editingProductId
         ? await api.updateProduct(editingProductId, payload)
         : await api.createProduct(payload);
 
-      saveProductOptions(savedProduct.id, productForm.selectedSizes, productForm.selectedColors);
+      let imagesUploaded = true;
+      if (photoFiles.main || photoFiles.additional.length > 0) {
+        try {
+          await api.uploadProductImages(savedProduct.id, photoFiles.main, photoFiles.additional);
+        } catch {
+          imagesUploaded = false;
+        }
+      }
+
       resetProductForm(event.currentTarget);
+      await products.reload();
       setMessage(
-        editingProductId
-          ? 'Товар оновлено. Фото поки не відправляються на backend.'
-          : 'Товар створено. Фото поки не відправляються на backend.'
+        imagesUploaded
+          ? editingProductId
+            ? 'Товар оновлено. Фото збережено на backend.'
+            : 'Товар створено. Фото збережено на backend.'
+          : editingProductId
+            ? 'Товар оновлено, але фото не завантажено.'
+            : 'Товар створено, але фото не завантажено.'
       );
-      products.reload();
     } catch (err) {
       setMessage(err.message || 'Не вдалося зберегти товар.');
     } finally {
@@ -159,15 +165,13 @@ export default function AdminPanel() {
     setProductForm(initialProduct);
     setEditingProductId(null);
     setPhotoPreviews({ main: '', additional: [] });
+    setPhotoFiles({ main: null, additional: [] });
     formElement?.reset();
   }
 
   function startEdit(product) {
-    const storedOptions = getStoredProductOptions()[product.id] || {};
-    const selectedSizes = storedOptions.selectedSizes?.length
-      ? storedOptions.selectedSizes
-      : [product.size || 'M'];
-    const selectedColors = storedOptions.colors?.length ? storedOptions.colors : ['Чорний'];
+    const selectedSizes = product.sizes?.length ? product.sizes : [product.size || 'M'];
+    const selectedColors = product.colors?.length ? product.colors : ['Чорний'];
 
     setEditingProductId(product.id);
     setProductForm({
@@ -180,6 +184,7 @@ export default function AdminPanel() {
       selectedColors
     });
     setPhotoPreviews({ main: '', additional: [] });
+    setPhotoFiles({ main: null, additional: [] });
     setMessage(`Редагування товару #${product.id}`);
     window.setTimeout(() => {
       productFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -252,9 +257,6 @@ export default function AdminPanel() {
     setMessage('');
     try {
       await api.deleteProduct(id);
-      const storedOptions = getStoredProductOptions();
-      delete storedOptions[id];
-      localStorage.setItem('sportstore_product_options', JSON.stringify(storedOptions));
       setMessage('Товар видалено.');
       products.reload();
     } catch (err) {
@@ -454,7 +456,7 @@ export default function AdminPanel() {
             <input type="file" accept="image/*" multiple onChange={updateAdditionalPhotos} />
           </label>
           <p className="admin-upload-note">
-            Завантаження фото буде підключено після налаштування серверного збереження файлів.
+            Фото зберігаються на backend у папці uploads/products після збереження товару.
           </p>
           {(photoPreviews.main || photoPreviews.additional.length > 0) && (
             <div className="photo-preview-grid">
@@ -611,7 +613,7 @@ export default function AdminPanel() {
               <span>#{product.id}</span>
               <strong>{product.name}</strong>
               <span>{product.brand}</span>
-              <span>{product.size}</span>
+              <span>{product.sizes?.length ? product.sizes.join(', ') : product.size}</span>
               <span>{Number(product.price).toFixed(2)} грн</span>
               <button
                 className="ghost-button admin-edit-button"

@@ -1,3 +1,5 @@
+import { API_URL } from './api.js';
+
 export const storeImages = {
   banner: new URL('../../images/banner.jpg', import.meta.url).href,
   logo: new URL('../../images/logo.png', import.meta.url).href,
@@ -35,7 +37,44 @@ export const storeImages = {
   }
 };
 
+function resolveBackendImage(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  if (url.startsWith('/')) {
+    return `${API_URL}${url}`;
+  }
+  return url;
+}
+
+function uniqueImages(images) {
+  return [...new Set(images.filter(Boolean))];
+}
+
+function getBackendProductImages(product) {
+  const mainImage = resolveBackendImage(product?.mainImage);
+  const galleryImages = Array.isArray(product?.galleryImages)
+    ? product.galleryImages.map(resolveBackendImage).filter(Boolean)
+    : [];
+
+  return {
+    mainImage,
+    galleryImages: uniqueImages(galleryImages),
+    allImages: uniqueImages([mainImage, ...galleryImages])
+  };
+}
+
 export function getProductImage(product) {
+  const backendImages = getBackendProductImages(product);
+  if (backendImages.mainImage) {
+    return backendImages.mainImage;
+  }
+
+  if (backendImages.galleryImages.length > 0) {
+    return backendImages.galleryImages[0];
+  }
+
   const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
   const productId = Number(product?.id) || 1;
 
@@ -43,6 +82,11 @@ export function getProductImage(product) {
 }
 
 export function getProductGallery(product) {
+  const backendImages = getBackendProductImages(product);
+  if (backendImages.allImages.length > 0) {
+    return backendImages.allImages;
+  }
+
   const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
   return categoryImages;
 }

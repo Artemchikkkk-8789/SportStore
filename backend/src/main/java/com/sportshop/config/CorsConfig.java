@@ -5,9 +5,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 @Configuration
@@ -24,6 +26,16 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedMethods(ALLOWED_METHODS.toArray(String[]::new))
                 .allowedHeaders(ALLOWED_HEADERS.toArray(String[]::new))
                 .allowCredentials(true);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String uploadsPath = Paths.get("uploads").toAbsolutePath().normalize().toUri().toString();
+        if (!uploadsPath.endsWith("/")) {
+            uploadsPath = uploadsPath + "/";
+        }
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadsPath);
     }
 
     @Bean

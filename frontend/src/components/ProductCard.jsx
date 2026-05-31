@@ -6,6 +6,7 @@ export default function ProductCard({ product }) {
   const location = useLocation();
   const image = getProductImage(product);
   const currentCatalogPath = `${location.pathname}${location.search}`;
+  const sizes = product.sizes?.length ? product.sizes.join(', ') : product.size || 'універсальний';
 
   return (
     <article className="product-card">
@@ -18,7 +19,7 @@ export default function ProductCard({ product }) {
           <Link className="product-title" to={`/products/${product.id}`} state={{ from: currentCatalogPath }}>
             {product.name}
           </Link>
-          <p className="muted">Розмір: {product.size || 'універсальний'}</p>
+          <p className="muted">Розмір: {sizes}</p>
         </div>
         <div className="product-card-footer">
           <strong>{Number(product.price).toFixed(2)} грн</strong>
