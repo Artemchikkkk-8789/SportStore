@@ -1,6 +1,5 @@
 package com.sportshop.controller;
 
-import com.sportshop.dto.ProductImagesDto;
 import com.sportshop.dto.ProductDto;
 import com.sportshop.entity.Category;
 import com.sportshop.entity.Product;
@@ -9,9 +8,11 @@ import com.sportshop.service.CategoryService;
 import com.sportshop.service.FileStorageService;
 import com.sportshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,8 @@ public List<ProductDto> getAll(
 
     @PostMapping("/{id}/images")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ProductImagesDto uploadImages(
+    @PostMapping("/{id}/images")
+    public ProductDto uploadImages(
             @PathVariable Long id,
             @RequestParam(value = "mainImage", required = false) MultipartFile mainImage,
             @RequestParam(value = "galleryImages", required = false) List<MultipartFile> galleryImages
@@ -92,16 +94,25 @@ public List<ProductDto> getAll(
             throw new RuntimeException("Product not found: " + id);
         }
 
+        List<MultipartFile> nonEmptyGalleryImages = galleryImages == null
+                ? List.of()
+                : galleryImages.stream()
+                        .filter(file -> file != null && !file.isEmpty())
+                        .toList();
+        if ((mainImage == null || mainImage.isEmpty()) && nonEmptyGalleryImages.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No product images were provided");
+        }
+
         String mainImageUrl = fileStorageService.saveProductImage(id, mainImage);
         List<String> galleryImageUrls = new ArrayList<>();
-        if (galleryImages != null) {
-            galleryImageUrls = galleryImages.stream()
+        if (!nonEmptyGalleryImages.isEmpty()) {
+            galleryImageUrls = nonEmptyGalleryImages.stream()
                     .map(file -> fileStorageService.saveProductImage(id, file))
                     .filter(url -> url != null)
                     .toList();
         }
 
         Product updated = productService.updateImages(id, mainImageUrl, galleryImageUrls);
-        return new ProductImagesDto(updated.getMainImage(), updated.getGalleryImages());
+        return productMapper.toDTO(updated);
     }
 }

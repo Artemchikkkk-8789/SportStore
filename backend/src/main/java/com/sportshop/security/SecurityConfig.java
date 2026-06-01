@@ -13,7 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 @Configuration
 @EnableMethodSecurity
@@ -46,8 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
                         // ===== ADMIN: POST/PUT/DELETE =====
-                        .requestMatchers(new AntPathRequestMatcher("/products/*/images", "POST")).hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/products/{id}/images", "/products/*/images").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(antMatcher(HttpMethod.POST, "/products/*/images")).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(antMatcher(HttpMethod.POST, "/products/**/images")).hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/products", "/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAuthority("ROLE_ADMIN")

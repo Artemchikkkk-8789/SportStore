@@ -6,6 +6,7 @@ import com.sportshop.repository.CategoryRepository;
 import com.sportshop.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,7 @@ public class ProductService {
         return productRepository.save(existingProduct);
     }
 
+    @Transactional
     public Product updateImages(Long id, String mainImage, List<String> galleryImages) {
         Product existingProduct = findById(id);
         if (existingProduct == null) {
@@ -56,10 +58,14 @@ public class ProductService {
             existingProduct.setMainImage(mainImage);
         }
         if (galleryImages != null) {
-            existingProduct.setGalleryImages(galleryImages);
+            if (existingProduct.getGalleryImages() == null) {
+                existingProduct.setGalleryImages(new ArrayList<>());
+            }
+            existingProduct.getGalleryImages().clear();
+            existingProduct.getGalleryImages().addAll(galleryImages);
         }
 
-        return productRepository.save(existingProduct);
+        return productRepository.saveAndFlush(existingProduct);
     }
 
     public void deleteById(Long id) {

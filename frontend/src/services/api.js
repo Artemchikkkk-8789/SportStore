@@ -103,11 +103,20 @@ export const api = {
   },
 
   uploadProductImages(id, mainImage, galleryImages = []) {
+    if (!id) {
+      throw new Error('Product id is required for image upload');
+    }
+
+    const additionalImages = Array.from(galleryImages || []).filter(Boolean);
+    if (!mainImage && additionalImages.length === 0) {
+      throw new Error('Не вибрано фото для завантаження.');
+    }
+
     const formData = new FormData();
     if (mainImage) {
       formData.append('mainImage', mainImage);
     }
-    galleryImages.forEach((image) => {
+    additionalImages.forEach((image) => {
       formData.append('galleryImages', image);
     });
 

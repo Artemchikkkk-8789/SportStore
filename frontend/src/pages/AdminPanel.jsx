@@ -44,6 +44,8 @@ export default function AdminPanel() {
   const orders = useAsyncData(() => api.getOrders(), []);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const mainPhotoInputRef = useRef(null);
+  const additionalPhotoInputRef = useRef(null);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
   const [photoFiles, setPhotoFiles] = useState({ main: null, additional: [] });
   const [editingProductId, setEditingProductId] = useState(null);
@@ -134,11 +136,21 @@ export default function AdminPanel() {
         ? await api.updateProduct(editingProductId, payload)
         : await api.createProduct(payload);
 
+      const mainImageFile = mainPhotoInputRef.current?.files?.[0] || photoFiles.main;
+      const galleryImageFiles = Array.from(additionalPhotoInputRef.current?.files || photoFiles.additional || []);
+      const hasSelectedImages = Boolean(mainImageFile || galleryImageFiles.length > 0);
       let imagesUploaded = true;
-      if (photoFiles.main || photoFiles.additional.length > 0) {
+      let uploadedProduct = savedProduct;
+      if (hasSelectedImages) {
         try {
-          await api.uploadProductImages(savedProduct.id, photoFiles.main, photoFiles.additional);
-        } catch {
+          uploadedProduct = await api.uploadProductImages(savedProduct.id, mainImageFile, galleryImageFiles);
+          const refreshedProduct = await api.getProduct(savedProduct.id);
+          uploadedProduct = refreshedProduct || uploadedProduct;
+          if (!uploadedProduct?.mainImage && !uploadedProduct?.galleryImages?.length) {
+            imagesUploaded = false;
+          }
+        } catch (uploadError) {
+          console.error('Product image upload failed', uploadError);
           imagesUploaded = false;
         }
       }
@@ -166,6 +178,12 @@ export default function AdminPanel() {
     setEditingProductId(null);
     setPhotoPreviews({ main: '', additional: [] });
     setPhotoFiles({ main: null, additional: [] });
+    if (mainPhotoInputRef.current) {
+      mainPhotoInputRef.current.value = '';
+    }
+    if (additionalPhotoInputRef.current) {
+      additionalPhotoInputRef.current.value = '';
+    }
     formElement?.reset();
   }
 
@@ -449,11 +467,24 @@ export default function AdminPanel() {
           </label>
           <label>
             Основне фото товару
-            <input type="file" accept="image/*" onChange={updateMainPhoto} />
+            <input
+              ref={mainPhotoInputRef}
+              name="mainImage"
+              type="file"
+              accept="image/*"
+              onChange={updateMainPhoto}
+            />
           </label>
           <label>
             Додаткові фото товару
-            <input type="file" accept="image/*" multiple onChange={updateAdditionalPhotos} />
+            <input
+              ref={additionalPhotoInputRef}
+              name="galleryImages"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={updateAdditionalPhotos}
+            />
           </label>
           <p className="admin-upload-note">
             Фото зберігаються на backend у папці uploads/products після збереження товару.

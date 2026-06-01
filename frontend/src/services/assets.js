@@ -87,8 +87,8 @@ export function getProductGallery(product) {
     return backendImages.allImages;
   }
 
-  const categoryImages = storeImages.products[Number(product?.categoryId)] || storeImages.products[1];
-  return categoryImages;
+  const fallbackImage = getProductImage(product);
+  return fallbackImage ? [fallbackImage] : [];
 }
 
 export function getCategoryImage(category) {
