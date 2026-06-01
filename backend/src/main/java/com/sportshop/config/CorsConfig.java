@@ -15,7 +15,11 @@ import java.util.List;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    private static final List<String> ALLOWED_ORIGINS = List.of("http://localhost:5173");
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+            "https://sport-store-gules.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000"
+    );
     private static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
     private static final List<String> ALLOWED_HEADERS = List.of("Authorization", "Content-Type");
 
