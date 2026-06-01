@@ -81,7 +81,6 @@ public List<ProductDto> getAll(
         productService.deleteById(id);
     }
 
-    @PostMapping("/{id}/images")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping("/{id}/images")
     public ProductDto uploadImages(
