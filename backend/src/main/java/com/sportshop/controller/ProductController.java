@@ -9,10 +9,10 @@ import com.sportshop.service.FileStorageService;
 import com.sportshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,8 +81,7 @@ public List<ProductDto> getAll(
         productService.deleteById(id);
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @PostMapping("/{id}/images")
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProductDto uploadImages(
             @PathVariable Long id,
             @RequestParam(value = "mainImage", required = false) MultipartFile mainImage,
@@ -112,6 +111,39 @@ public List<ProductDto> getAll(
         }
 
         Product updated = productService.updateImages(id, mainImageUrl, galleryImageUrls);
+        return productMapper.toDTO(updated);
+    }
+
+    @PostMapping(value = "/{id}/color-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductDto uploadColorImages(
+            @PathVariable Long id,
+            @RequestParam("color") String color,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images
+    ) {
+        Product product = productService.findById(id);
+        if (product == null) {
+            throw new RuntimeException("Product not found: " + id);
+        }
+
+        List<MultipartFile> nonEmptyImages = images == null
+                ? List.of()
+                : images.stream()
+                        .filter(file -> file != null && !file.isEmpty())
+                        .limit(4)
+                        .toList();
+        if (color == null || color.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Color is required");
+        }
+        if (nonEmptyImages.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No color images were provided");
+        }
+
+        List<String> imageUrls = nonEmptyImages.stream()
+                .map(file -> fileStorageService.saveProductImage(id, file))
+                .filter(url -> url != null)
+                .toList();
+
+        Product updated = productService.updateColorImages(id, color, imageUrls);
         return productMapper.toDTO(updated);
     }
 }

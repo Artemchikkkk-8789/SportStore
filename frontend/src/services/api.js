@@ -133,6 +133,28 @@ export const api = {
     });
   },
 
+  uploadProductColorImages(id, color, images = []) {
+    if (!id) {
+      throw new Error('Product id is required for color image upload');
+    }
+
+    const colorImages = Array.from(images || []).filter(Boolean).slice(0, 4);
+    if (!color || colorImages.length === 0) {
+      throw new Error('Оберіть колір і фото для завантаження.');
+    }
+
+    const formData = new FormData();
+    formData.append('color', color);
+    colorImages.forEach((image) => {
+      formData.append('images', image);
+    });
+
+    return request(`/products/${id}/color-images`, {
+      method: 'POST',
+      body: formData
+    });
+  },
+
   updateProduct(id, payload) {
     return request(`/products/${id}`, {
       method: 'PUT',

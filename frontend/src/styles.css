@@ -146,15 +146,6 @@ main {
   gap: 10px;
 }
 
-.mobile-menu-button {
-  display: none;
-  margin-left: auto;
-}
-
-.main-nav a.mobile-auth-link {
-  display: none;
-}
-
 .primary-button,
 .ghost-button,
 .text-button,
@@ -613,12 +604,42 @@ textarea:focus {
   overflow: hidden;
 }
 
-.product-gallery > img {
+.product-main-image {
+  position: relative;
+}
+
+.product-main-image > img {
   display: block;
   width: 100%;
   min-height: 520px;
   max-height: 620px;
   object-fit: cover;
+}
+
+.gallery-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 999px;
+  background: rgba(18, 24, 38, 0.62);
+  color: #fff;
+  transform: translateY(-50%);
+  box-shadow: 0 12px 28px rgba(18, 24, 38, 0.22);
+}
+
+.gallery-arrow:hover {
+  background: var(--accent);
+}
+
+.gallery-arrow.previous {
+  left: 14px;
+}
+
+.gallery-arrow.next {
+  right: 14px;
 }
 
 .product-thumbnails {
@@ -1279,11 +1300,26 @@ textarea:focus {
   line-height: 1.4;
 }
 
+.admin-color-photo-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-color-photo-section h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .photo-preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 10px;
   margin-top: 12px;
+}
+
+.photo-preview-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(68px, 92px));
 }
 
 .photo-preview-grid img {
@@ -1403,35 +1439,11 @@ textarea:focus {
 }
 
 @media (max-width: 920px) {
-  .mobile-menu-button {
-    display: inline-flex;
-  }
-
   .main-nav {
-    position: absolute;
-    top: 76px;
-    left: 16px;
-    right: 16px;
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: var(--shadow);
-  }
-
-  .main-nav.open {
     display: flex;
-  }
-
-  .main-nav a.mobile-auth-link {
-    display: inline-flex;
-  }
-
-  .header-actions {
-    display: none;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: 0;
   }
 
   .benefits,

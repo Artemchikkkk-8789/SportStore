@@ -3,6 +3,7 @@ package com.sportshop.dto;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class ProductDto {
@@ -16,4 +17,5 @@ public class ProductDto {
     private Long categoryId;
     private String mainImage;
     private List<String> galleryImages;
+    private Map<String, List<String>> colorImages;
 }

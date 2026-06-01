@@ -51,4 +51,7 @@ public class Product {
     @OrderColumn(name = "sort_order")
     @Column(name = "image_url")
     private List<String> galleryImages = new ArrayList<>();
+
+    @Column(name = "color_images", length = 10000)
+    private String colorImages = "{}";
 }

@@ -49,6 +49,8 @@ public class SecurityConfig {
                         // ===== ADMIN: POST/PUT/DELETE =====
                         .requestMatchers(antMatcher(HttpMethod.POST, "/products/*/images")).hasAuthority("ROLE_ADMIN")
                         .requestMatchers(antMatcher(HttpMethod.POST, "/products/**/images")).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(antMatcher(HttpMethod.POST, "/products/*/color-images")).hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(antMatcher(HttpMethod.POST, "/products/**/color-images")).hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/products", "/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/products", "/products/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/products", "/products/**").hasAuthority("ROLE_ADMIN")

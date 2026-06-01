@@ -57,10 +57,15 @@ function getBackendProductImages(product) {
   const galleryImages = Array.isArray(product?.galleryImages)
     ? product.galleryImages.map(resolveBackendImage).filter(Boolean)
     : [];
+  const colorImages = Object.entries(product?.colorImages || {}).reduce((result, [color, images]) => {
+    result[color] = Array.isArray(images) ? uniqueImages(images.map(resolveBackendImage)) : [];
+    return result;
+  }, {});
 
   return {
     mainImage,
     galleryImages: uniqueImages(galleryImages),
+    colorImages,
     allImages: uniqueImages([mainImage, ...galleryImages])
   };
 }
@@ -69,6 +74,11 @@ export function getProductImage(product) {
   const backendImages = getBackendProductImages(product);
   if (backendImages.mainImage) {
     return backendImages.mainImage;
+  }
+
+  const firstColorImages = Object.values(backendImages.colorImages).find((images) => images.length > 0);
+  if (firstColorImages?.length) {
+    return firstColorImages[0];
   }
 
   if (backendImages.galleryImages.length > 0) {
@@ -81,8 +91,13 @@ export function getProductImage(product) {
   return categoryImages[(productId - 1) % categoryImages.length];
 }
 
-export function getProductGallery(product) {
+export function getProductGallery(product, color = '') {
   const backendImages = getBackendProductImages(product);
+  const selectedColorImages = color ? backendImages.colorImages[color] || [] : [];
+  if (selectedColorImages.length > 0) {
+    return selectedColorImages;
+  }
+
   if (backendImages.allImages.length > 0) {
     return backendImages.allImages;
   }

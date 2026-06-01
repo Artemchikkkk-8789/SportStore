@@ -1,5 +1,4 @@
-import { Dumbbell, LogOut, Menu, ShoppingBag, UserRound, X } from 'lucide-react';
-import { useState } from 'react';
+import { Dumbbell, LogOut, ShoppingBag, UserRound } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
@@ -12,25 +11,20 @@ const links = [
 ];
 
 export default function Header() {
-  const [open, setOpen] = useState(false);
   const { count } = useCart();
   const { isAuthenticated, isAdmin, logout } = useAuth();
 
   return (
     <header className="site-header">
       <div className="container header-inner">
-        <NavLink to="/" className="brand" onClick={() => setOpen(false)}>
+        <NavLink to="/" className="brand">
           <img src={storeImages.logo} alt="SportStore" />
           <span>SportStore</span>
         </NavLink>
 
-        <button className="icon-button mobile-menu-button" type="button" onClick={() => setOpen((value) => !value)}>
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
-
-        <nav className={`main-nav ${open ? 'open' : ''}`}>
+        <nav className="main-nav">
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} onClick={() => setOpen(false)}>
+            <NavLink key={link.to} to={link.to}>
               {link.label === 'Кошик' ? (
                 <span className="cart-link">
                   <ShoppingBag size={18} />
@@ -43,13 +37,13 @@ export default function Header() {
             </NavLink>
           ))}
           {isAuthenticated && (
-            <NavLink to="/profile" onClick={() => setOpen(false)}>
+            <NavLink to="/profile">
               <UserRound size={18} />
               Профіль
             </NavLink>
           )}
           {isAdmin && (
-            <NavLink to="/admin" onClick={() => setOpen(false)}>
+            <NavLink to="/admin">
               <Dumbbell size={18} />
               Адмін
             </NavLink>
@@ -59,16 +53,7 @@ export default function Header() {
               <LogOut size={18} />
               Вийти
             </button>
-          ) : (
-            <>
-              <NavLink className="mobile-auth-link" to="/login" onClick={() => setOpen(false)}>
-                Увійти
-              </NavLink>
-              <NavLink className="mobile-auth-link" to="/register" onClick={() => setOpen(false)}>
-                Реєстрація
-              </NavLink>
-            </>
-          )}
+          ) : null}
         </nav>
 
         <div className="header-actions">

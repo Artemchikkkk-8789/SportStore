@@ -28,6 +28,8 @@ const sizeOptions = {
 
 const colorOptions = ['Чорний', 'Білий', 'Сірий', 'Синій', 'Червоний', 'Зелений'];
 
+const MAX_COLOR_PHOTOS = 4;
+
 function inferSizeType(sizes) {
   return sizes.some((size) => Number.isFinite(Number(size))) ? 'shoes' : 'clothing';
 }
@@ -48,6 +50,8 @@ export default function AdminPanel() {
   const additionalPhotoInputRef = useRef(null);
   const [photoPreviews, setPhotoPreviews] = useState({ main: '', additional: [] });
   const [photoFiles, setPhotoFiles] = useState({ main: null, additional: [] });
+  const [colorPhotoFiles, setColorPhotoFiles] = useState({});
+  const [colorPhotoPreviews, setColorPhotoPreviews] = useState({});
   const [editingProductId, setEditingProductId] = useState(null);
 
   function updateProduct(key, value) {
@@ -97,15 +101,35 @@ export default function AdminPanel() {
   }
 
   function updateAdditionalPhotos(event) {
-    const files = Array.from(event.target.files || []);
+    const selectedFiles = Array.from(event.target.files || []);
     setPhotoFiles((current) => ({
       ...current,
-      additional: files
+      additional: [...current.additional, ...selectedFiles]
     }));
     setPhotoPreviews((current) => ({
       ...current,
-      additional: files.map((file) => URL.createObjectURL(file))
+      additional: [
+        ...current.additional,
+        ...selectedFiles.map((file) => URL.createObjectURL(file))
+      ]
     }));
+    event.target.value = '';
+  }
+
+  function updateColorPhotos(color, event) {
+    const selectedFiles = Array.from(event.target.files || []);
+    setColorPhotoFiles((current) => ({
+      ...current,
+      [color]: [...(current[color] || []), ...selectedFiles].slice(0, MAX_COLOR_PHOTOS)
+    }));
+    setColorPhotoPreviews((current) => ({
+      ...current,
+      [color]: [
+        ...(current[color] || []),
+        ...selectedFiles.map((file) => URL.createObjectURL(file))
+      ].slice(0, MAX_COLOR_PHOTOS)
+    }));
+    event.target.value = '';
   }
 
   async function createProduct(event) {
@@ -137,7 +161,9 @@ export default function AdminPanel() {
         : await api.createProduct(payload);
 
       const mainImageFile = mainPhotoInputRef.current?.files?.[0] || photoFiles.main;
-      const galleryImageFiles = Array.from(additionalPhotoInputRef.current?.files || photoFiles.additional || []);
+      const galleryImageFiles = photoFiles.additional.length
+        ? photoFiles.additional
+        : Array.from(additionalPhotoInputRef.current?.files || []);
       const hasSelectedImages = Boolean(mainImageFile || galleryImageFiles.length > 0);
       let imagesUploaded = true;
       let uploadedProduct = savedProduct;
@@ -152,6 +178,18 @@ export default function AdminPanel() {
         } catch (uploadError) {
           console.error('Product image upload failed', uploadError);
           imagesUploaded = false;
+        }
+      }
+
+      for (const color of productForm.selectedColors) {
+        const files = colorPhotoFiles[color] || [];
+        if (files.length > 0) {
+          try {
+            uploadedProduct = await api.uploadProductColorImages(savedProduct.id, color, files);
+          } catch (uploadError) {
+            console.error(`Product color image upload failed for ${color}`, uploadError);
+            imagesUploaded = false;
+          }
         }
       }
 
@@ -178,6 +216,8 @@ export default function AdminPanel() {
     setEditingProductId(null);
     setPhotoPreviews({ main: '', additional: [] });
     setPhotoFiles({ main: null, additional: [] });
+    setColorPhotoFiles({});
+    setColorPhotoPreviews({});
     if (mainPhotoInputRef.current) {
       mainPhotoInputRef.current.value = '';
     }
@@ -203,6 +243,8 @@ export default function AdminPanel() {
     });
     setPhotoPreviews({ main: '', additional: [] });
     setPhotoFiles({ main: null, additional: [] });
+    setColorPhotoFiles({});
+    setColorPhotoPreviews({});
     setMessage(`Редагування товару #${product.id}`);
     window.setTimeout(() => {
       productFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -497,6 +539,27 @@ export default function AdminPanel() {
               ))}
             </div>
           )}
+          <div className="admin-color-photo-section">
+            <h3>Фото для кольорів</h3>
+            {productForm.selectedColors.map((color) => (
+              <label key={color}>
+                Фото для кольору {color}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => updateColorPhotos(color, event)}
+                />
+                {colorPhotoPreviews[color]?.length > 0 && (
+                  <div className="photo-preview-grid compact">
+                    {colorPhotoPreviews[color].map((preview) => (
+                      <img key={preview} src={preview} alt={`Фото кольору ${color}`} />
+                    ))}
+                  </div>
+                )}
+              </label>
+            ))}
+          </div>
           <button className="primary-button full" type="submit" disabled={busy}>
             <Plus size={18} />
             {editingProductId ? 'Зберегти зміни' : 'Додати товар'}

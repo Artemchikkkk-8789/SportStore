@@ -1,4 +1,4 @@
-import { ArrowLeft, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import StateBlock from '../components/StateBlock.jsx';
@@ -35,8 +35,10 @@ export default function ProductDetails() {
   if (!product?.id) return <StateBlock title="Товар не знайдено" />;
 
   const image = getProductImage(product);
-  const gallery = getProductGallery(product);
-  const activeImage = gallery.includes(selectedImage) ? selectedImage : image;
+  const gallery = getProductGallery(product, selectedColor);
+  const activeImage = gallery.includes(selectedImage) ? selectedImage : gallery[0] || image;
+  const activeImageIndex = Math.max(gallery.indexOf(activeImage), 0);
+  const hasMultipleImages = gallery.length > 1;
   const sizes = normalizeOptions(product.sizes, [product.size || 'універсальний']);
   const colors = normalizeOptions(product.colors, fallbackColors);
   const category = categories.data.find((item) => item.id === product.categoryId);
@@ -61,13 +63,23 @@ export default function ProductDetails() {
       name: product.name,
       brand: product.brand || 'SportStore',
       price: product.price,
-      image,
+      image: activeImage,
       selectedSize,
       selectedColor,
       quantity: 1
     });
     setAdded(true);
     setSelectionError('');
+  }
+
+  function showPreviousImage() {
+    const previousIndex = activeImageIndex === 0 ? gallery.length - 1 : activeImageIndex - 1;
+    setSelectedImage(gallery[previousIndex]);
+  }
+
+  function showNextImage() {
+    const nextIndex = activeImageIndex === gallery.length - 1 ? 0 : activeImageIndex + 1;
+    setSelectedImage(gallery[nextIndex]);
   }
 
   return (
@@ -79,14 +91,37 @@ export default function ProductDetails() {
 
       <div className="product-details-layout">
         <div className="product-gallery">
-          <img src={activeImage} alt={product.name} />
-          {gallery.length > 1 && (
+          <div className="product-main-image">
+            <img src={activeImage} alt={product.name} />
+            {hasMultipleImages && (
+              <>
+                <button
+                  className="gallery-arrow previous"
+                  type="button"
+                  aria-label="Попереднє фото"
+                  onClick={showPreviousImage}
+                >
+                  <ChevronLeft size={28} />
+                </button>
+                <button
+                  className="gallery-arrow next"
+                  type="button"
+                  aria-label="Наступне фото"
+                  onClick={showNextImage}
+                >
+                  <ChevronRight size={28} />
+                </button>
+              </>
+            )}
+          </div>
+          {hasMultipleImages && (
             <div className="product-thumbnails">
               {gallery.map((galleryImage) => (
                 <button
                   className={activeImage === galleryImage ? 'selected' : ''}
                   key={galleryImage}
                   type="button"
+                  onMouseEnter={() => setSelectedImage(galleryImage)}
                   onClick={() => setSelectedImage(galleryImage)}
                 >
                   <img src={galleryImage} alt={`${product.name} фото`} />
@@ -141,6 +176,7 @@ export default function ProductDetails() {
                   type="button"
                   onClick={() => {
                     setSelectedColor(color);
+                    setSelectedImage('');
                     setAdded(false);
                     setSelectionError('');
                   }}
