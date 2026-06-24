@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { GOOGLE_LOGIN_URL } from '../services/api.js';
 
 export default function Login() {
   const { login } = useAuth();
@@ -52,9 +51,6 @@ export default function Login() {
         <button className="primary-button full" disabled={loading} type="submit">
           {loading ? 'Вхід...' : 'Увійти'}
         </button>
-        <a className="ghost-button full" href={GOOGLE_LOGIN_URL}>
-          Увійти через Google
-        </a>
         <p>
           Немає акаунта? <Link to="/register">Зареєструватися</Link>
         </p>
