@@ -4,8 +4,10 @@ import com.sportshop.dto.OrderDto;
 import com.sportshop.entity.Order;
 import com.sportshop.entity.OrderStatus;
 import com.sportshop.entity.Product;
+import com.sportshop.entity.User;
 import com.sportshop.repository.OrderRepository;
 import com.sportshop.repository.ProductRepository;
+import com.sportshop.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
     public List<Order> findAll() {
         return orderRepository.findAll().stream()
@@ -34,6 +37,7 @@ public class OrderService {
     public Order createOrder(String username, OrderDto dto) {
         Order order = new Order();
         order.setUsername(username);
+        order.setCustomerEmail(resolveCustomerEmail(username, dto.getCustomerEmail()));
         order.setFullName(dto.getFullName());
         order.setPhone(dto.getPhone());
         order.setCity(dto.getCity());
@@ -61,8 +65,7 @@ public class OrderService {
     }
 
     public Order save(OrderDto dto) {
-        String username = dto.getUsername() != null ? dto.getUsername() : "unknown";
-        return createOrder(username, dto);
+        return createOrder(dto.getUsername(), dto);
     }
 
     public Order updateStatus(Long id, OrderStatus status) {
@@ -77,5 +80,20 @@ public class OrderService {
 
     public void delete(Long id) {
         orderRepository.deleteById(id);
+    }
+
+    private String resolveCustomerEmail(String username, String providedEmail) {
+        if (providedEmail != null && !providedEmail.isBlank()) {
+            return providedEmail.trim();
+        }
+
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+
+        return userRepository.findByUsername(username)
+                .map(User::getEmail)
+                .filter(email -> email != null && !email.isBlank())
+                .orElse(username);
     }
 }

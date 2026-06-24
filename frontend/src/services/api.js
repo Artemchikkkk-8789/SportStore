@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const GOOGLE_LOGIN_URL = `${API_URL}/oauth2/authorization/google`;
 
 function getToken() {
   return localStorage.getItem('sportstore_token');
@@ -55,8 +56,43 @@ export const api = {
     return request('/categories');
   },
 
+  getBrands() {
+    return request('/brands');
+  },
+
+  createBrand(payload) {
+    return request('/brands', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  updateBrand(id, payload) {
+    return request(`/brands/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  deleteBrand(id) {
+    return request(`/brands/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   getAdminStats() {
     return request('/admin/stats');
+  },
+
+  getUsers() {
+    return request('/admin/users');
+  },
+
+  updateUserRole(id, role) {
+    return request(`/admin/users/${id}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role })
+    });
   },
 
   login(payload) {
@@ -189,4 +225,4 @@ export const api = {
   }
 };
 
-export { API_URL };
+export { API_URL, GOOGLE_LOGIN_URL };

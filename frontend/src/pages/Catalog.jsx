@@ -71,6 +71,7 @@ export default function Catalog() {
   const [sortBy, setSortBy] = useState('default');
 
   const categories = useAsyncData(() => api.getCategories(), []);
+  const brands = useAsyncData(() => api.getBrands(), []);
   const activeParams = useMemo(() => ({ ...filters }), [filters]);
   const products = useAsyncData(() => api.getProducts(activeParams), [activeParams]);
   const visibleProducts = useMemo(() => {
@@ -113,6 +114,7 @@ export default function Catalog() {
 
       <FilterPanel
         categories={categories.data}
+        brands={brands.data}
         filters={filters}
         onChange={updateFilter}
         onReset={() => setFilters(emptyFilters)}

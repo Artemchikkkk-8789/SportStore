@@ -22,6 +22,8 @@ export function AuthProvider({ children }) {
 
     return {
       username: payload.sub,
+      email: payload.email,
+      provider: payload.provider,
       role: payload.role,
       expiresAt: payload.exp ? new Date(payload.exp * 1000) : null
     };
@@ -46,8 +48,13 @@ export function AuthProvider({ children }) {
     setToken(null);
   }
 
+  function setAuthToken(nextToken) {
+    localStorage.setItem(TOKEN_KEY, nextToken);
+    setToken(nextToken);
+  }
+
   return (
-    <AuthContext.Provider value={{ token, user, isAdmin, isAuthenticated: Boolean(token), login, register, logout }}>
+    <AuthContext.Provider value={{ token, user, isAdmin, isAuthenticated: Boolean(token), login, register, logout, setAuthToken }}>
       {children}
     </AuthContext.Provider>
   );

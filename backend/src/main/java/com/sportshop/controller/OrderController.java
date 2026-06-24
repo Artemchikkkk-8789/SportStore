@@ -41,7 +41,11 @@ public class OrderController {
 
     @PostMapping
     public OrderDto create(@RequestBody OrderDto dto, Principal principal) {
-        return OrderMapper.toDTO(orderService.createOrder(principal.getName(), dto));
+        String username = principal != null ? principal.getName() : null;
+        if (username == null && (dto.getCustomerEmail() == null || dto.getCustomerEmail().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Guest order customerEmail is required");
+        }
+        return OrderMapper.toDTO(orderService.createOrder(username, dto));
     }
 
     @PutMapping("/{id}/status")

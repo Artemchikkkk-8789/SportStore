@@ -23,6 +23,7 @@ const ukrainianCities = Object.keys(deliveryData);
 
 const initialCheckout = {
   fullName: '',
+  customerEmail: '',
   phone: '',
   city: '',
   warehouse: '',
@@ -45,7 +46,7 @@ function getCartItemKey(item) {
 
 export default function Cart() {
   const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState(initialCheckout);
@@ -97,8 +98,8 @@ export default function Cart() {
   async function checkout(event) {
     event.preventDefault();
 
-    if (!isAuthenticated) {
-      setMessage('Для оформлення замовлення потрібно увійти в акаунт.');
+    if (!isAuthenticated && !checkoutForm.customerEmail.trim()) {
+      setMessage('Для гостьового замовлення вкажіть Email.');
       return;
     }
 
@@ -127,6 +128,7 @@ export default function Cart() {
         address,
         deliveryService: selectedDelivery.label,
         paymentMethod: checkoutForm.payment,
+        customerEmail: isAuthenticated ? user?.email || user?.username : checkoutForm.customerEmail.trim(),
         dispatchCity,
         estimatedDeliveryTime,
         totalPrice: grandTotal,
@@ -167,7 +169,7 @@ export default function Cart() {
       <div className="page-heading">
         <p className="eyebrow">Кошик</p>
         <h1>Ваше замовлення</h1>
-        <p>Товари зберігаються у localStorage, а оформлення доступне для авторизованих користувачів.</p>
+        <p>Товари зберігаються у localStorage, а замовлення можна оформити через акаунт або як гість.</p>
       </div>
 
       <form className="cart-layout" onSubmit={checkout}>
@@ -210,6 +212,18 @@ export default function Cart() {
                   required
                 />
               </label>
+              {!isAuthenticated && (
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={checkoutForm.customerEmail}
+                    placeholder="email@example.com"
+                    onChange={(event) => updateCheckoutField('customerEmail', event.target.value)}
+                    required
+                  />
+                </label>
+              )}
               <label>
                 Телефон
                 <span className="phone-input">

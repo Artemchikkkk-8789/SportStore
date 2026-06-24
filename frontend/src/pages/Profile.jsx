@@ -67,6 +67,14 @@ export default function Profile() {
               <dd>{user?.username || 'Не вказано'}</dd>
             </div>
             <div>
+              <dt>Email</dt>
+              <dd>{user?.email || 'Не вказано'}</dd>
+            </div>
+            <div>
+              <dt>Provider</dt>
+              <dd>{user?.provider || 'LOCAL'}</dd>
+            </div>
+            <div>
               <dt>Role</dt>
               <dd>{user?.role || 'ROLE_USER'}</dd>
             </div>

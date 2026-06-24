@@ -1,4 +1,4 @@
-export default function FilterPanel({ categories, filters, onChange, onReset }) {
+export default function FilterPanel({ categories, brands = [], filters, onChange, onReset }) {
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
@@ -22,12 +22,17 @@ export default function FilterPanel({ categories, filters, onChange, onReset }) 
 
       <label>
         Бренд
-        <input
-          type="search"
+        <select
           value={filters.brand}
-          placeholder="Nike, Adidas..."
           onChange={(event) => onChange('brand', event.target.value)}
-        />
+        >
+          <option value="">Усі бренди</option>
+          {brands.map((brand) => (
+            <option key={brand.id || brand.name} value={brand.name}>
+              {brand.name}
+            </option>
+          ))}
+        </select>
       </label>
 
       <div className="price-grid">

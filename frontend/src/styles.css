@@ -1359,7 +1359,8 @@ textarea:focus {
 }
 
 .admin-category-list,
-.admin-orders-list {
+.admin-orders-list,
+.admin-users-list {
   display: grid;
   gap: 10px;
   margin-top: 14px;
@@ -1413,6 +1414,29 @@ textarea:focus {
 
 .admin-order-card label {
   grid-column: 1 / -1;
+}
+
+.admin-user-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.admin-user-card div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-user-card span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.admin-user-card strong {
+  overflow-wrap: anywhere;
 }
 
 .admin-table {

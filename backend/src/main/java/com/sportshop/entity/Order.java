@@ -15,8 +15,11 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
     private String username;
+
+    @Column
+    private String customerEmail;
 
     @Column(nullable = false)
     private String fullName;

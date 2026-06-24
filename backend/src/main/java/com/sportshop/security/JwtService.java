@@ -1,5 +1,6 @@
 package com.sportshop.security;
 
+import com.sportshop.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,21 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateToken(User user) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + EXPIRATION);
+
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .claim("role", user.getRole().name())
+                .claim("email", user.getEmail())
+                .claim("provider", user.getProvider() != null ? user.getProvider().name() : null)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

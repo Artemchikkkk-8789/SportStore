@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class OrderDto {
     private Long id;
     private String username;
+    private String customerEmail;
     private String fullName;
     private String phone;
     private String city;

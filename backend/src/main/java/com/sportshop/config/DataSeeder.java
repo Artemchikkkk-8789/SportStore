@@ -4,6 +4,8 @@ import com.sportshop.entity.Category;
 import com.sportshop.entity.Product;
 import com.sportshop.entity.Role;
 import com.sportshop.entity.User;
+import com.sportshop.entity.UserProvider;
+import com.sportshop.service.BrandService;
 import com.sportshop.repository.CategoryRepository;
 import com.sportshop.repository.ProductRepository;
 import com.sportshop.repository.UserRepository;
@@ -21,6 +23,7 @@ public class DataSeeder implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final BrandService brandService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -39,14 +42,30 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void createAdminUser() {
-        if (userRepository.findByUsername("admin").isPresent()) {
+        var existingAdmin = userRepository.findByUsername("admin");
+        if (existingAdmin.isPresent()) {
+            User admin = existingAdmin.get();
+            boolean changed = false;
+            if (admin.getEmail() == null || admin.getEmail().isBlank()) {
+                admin.setEmail("admin@sportstore.local");
+                changed = true;
+            }
+            if (admin.getProvider() == null) {
+                admin.setProvider(UserProvider.LOCAL);
+                changed = true;
+            }
+            if (changed) {
+                userRepository.save(admin);
+            }
             return;
         }
 
         User admin = new User();
         admin.setUsername("admin");
+        admin.setEmail("admin@sportstore.local");
         admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setRole(Role.ROLE_ADMIN);
+        admin.setProvider(UserProvider.LOCAL);
         userRepository.save(admin);
     }
 
@@ -85,6 +104,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void createProduct(String name, String brand, double price, List<String> sizes, List<String> colors, Category category) {
+        brandService.getOrCreate(brand);
+
         if (productRepository.existsByNameAndBrandAndCategory(name, brand, category)) {
             return;
         }

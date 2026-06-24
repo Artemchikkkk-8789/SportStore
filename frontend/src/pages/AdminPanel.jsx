@@ -1,6 +1,7 @@
 import { Banknote, Folder, Package, Pencil, Plus, RefreshCw, ShoppingCart, Trash2, Users, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import StateBlock from '../components/StateBlock.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useAsyncData } from '../hooks/useAsyncData.js';
 import { api } from '../services/api.js';
 import { ORDER_STATUSES } from '../services/orderStorage.js';
@@ -35,14 +36,20 @@ function inferSizeType(sizes) {
 }
 
 export default function AdminPanel() {
+  const { user } = useAuth();
   const stats = useAsyncData(() => api.getAdminStats(), []);
   const products = useAsyncData(() => api.getProducts(), []);
   const categories = useAsyncData(() => api.getCategories(), []);
+  const brands = useAsyncData(() => api.getBrands(), []);
+  const users = useAsyncData(() => api.getUsers(), []);
   const productFormRef = useRef(null);
   const [productForm, setProductForm] = useState(initialProduct);
   const [categoryName, setCategoryName] = useState('');
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [categoryEditName, setCategoryEditName] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [editingBrandId, setEditingBrandId] = useState(null);
+  const [brandEditName, setBrandEditName] = useState('');
   const orders = useAsyncData(() => api.getOrders(), []);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -312,6 +319,82 @@ export default function AdminPanel() {
     }
   }
 
+  async function createBrand(event) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.createBrand({ name: brandName });
+      setBrandName('');
+      setMessage('Бренд створено.');
+      brands.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося створити бренд.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startBrandEdit(brand) {
+    setEditingBrandId(brand.id);
+    setBrandEditName(brand.name || '');
+    setMessage(`Редагування бренду #${brand.id}`);
+  }
+
+  async function updateBrand() {
+    if (!brandEditName.trim()) {
+      setMessage('Назва бренду не може бути порожньою.');
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.updateBrand(editingBrandId, { name: brandEditName.trim() });
+      setEditingBrandId(null);
+      setBrandEditName('');
+      setMessage('Бренд оновлено.');
+      brands.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося оновити бренд.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteBrand(id) {
+    if (!window.confirm('Видалити бренд?')) {
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.deleteBrand(id);
+      setMessage('Бренд видалено.');
+      brands.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося видалити бренд.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeUserRole(targetUser, role) {
+    setBusy(true);
+    setMessage('');
+    try {
+      await api.updateUserRole(targetUser.id, role);
+      setMessage(`Роль користувача ${targetUser.username} змінено на ${role}.`);
+      users.reload();
+      stats.reload();
+    } catch (err) {
+      setMessage(err.message || 'Не вдалося змінити роль користувача.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteProduct(id) {
     setBusy(true);
     setMessage('');
@@ -438,7 +521,17 @@ export default function AdminPanel() {
           </label>
           <label>
             Бренд
-            <input value={productForm.brand} onChange={(event) => updateProduct('brand', event.target.value)} required />
+            <select value={productForm.brand} onChange={(event) => updateProduct('brand', event.target.value)} required>
+              <option value="">Оберіть бренд</option>
+              {productForm.brand && !brands.data.some((brand) => brand.name === productForm.brand) && (
+                <option value={productForm.brand}>{productForm.brand}</option>
+              )}
+              {brands.data.map((brand) => (
+                <option key={brand.id} value={brand.name}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="price-grid">
             <label>
@@ -628,6 +721,118 @@ export default function AdminPanel() {
             </div>
           </section>
 
+          <form className="admin-form" onSubmit={createBrand}>
+            <h2>Новий бренд</h2>
+            <label>
+              Назва бренду
+              <input value={brandName} onChange={(event) => setBrandName(event.target.value)} required />
+            </label>
+            <button className="ghost-button full" type="submit" disabled={busy}>
+              <Plus size={18} />
+              Додати бренд
+            </button>
+          </form>
+
+          <section className="admin-form">
+            <div className="admin-form-heading">
+              <h2>Бренди</h2>
+              <button className="icon-button" type="button" onClick={brands.reload} disabled={busy}>
+                <RefreshCw size={18} />
+              </button>
+            </div>
+            {brands.loading && <StateBlock title="Завантаження брендів..." />}
+            {brands.error && <StateBlock title="Не вдалося завантажити бренди" text={brands.error} />}
+            {!brands.loading && !brands.error && (
+              <div className="admin-category-list">
+                {brands.data.map((brand) => (
+                  <div className="admin-category-row" key={brand.id}>
+                    {editingBrandId === brand.id ? (
+                      <>
+                        <input
+                          value={brandEditName}
+                          onChange={(event) => setBrandEditName(event.target.value)}
+                          autoFocus
+                        />
+                        <button className="ghost-button" type="button" onClick={updateBrand} disabled={busy}>
+                          Зберегти
+                        </button>
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={() => {
+                            setEditingBrandId(null);
+                            setBrandEditName('');
+                          }}
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{brand.name}</strong>
+                        <button className="ghost-button" type="button" onClick={() => startBrandEdit(brand)} disabled={busy}>
+                          <Pencil size={18} />
+                          Редагувати
+                        </button>
+                        <button className="icon-button danger" type="button" onClick={() => deleteBrand(brand.id)} disabled={busy}>
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="admin-form admin-users-panel">
+            <div className="admin-form-heading">
+              <h2>Користувачі</h2>
+              <button className="icon-button" type="button" onClick={users.reload} disabled={busy}>
+                <RefreshCw size={18} />
+              </button>
+            </div>
+            {users.loading && <StateBlock title="Завантаження користувачів..." />}
+            {users.error && <StateBlock title="Не вдалося завантажити користувачів" text={users.error} />}
+            {!users.loading && !users.error && (
+              <div className="admin-users-list">
+                {users.data.map((account) => {
+                  const canManageRoles = user?.username === 'admin' && account.username !== 'admin';
+                  return (
+                    <article className="admin-user-card" key={account.id}>
+                      <div>
+                        <span>Ім’я</span>
+                        <strong>{account.username}</strong>
+                      </div>
+                      <div>
+                        <span>Email</span>
+                        <strong>{account.email || 'не вказано'}</strong>
+                      </div>
+                      <div>
+                        <span>Provider</span>
+                        <strong>{account.provider || 'LOCAL'}</strong>
+                      </div>
+                      <div>
+                        <span>Роль</span>
+                        <strong>{account.role}</strong>
+                      </div>
+                      {canManageRoles && (
+                        <button
+                          className="ghost-button full"
+                          type="button"
+                          disabled={busy}
+                          onClick={() => changeUserRole(account, account.role === 'ROLE_ADMIN' ? 'ROLE_USER' : 'ROLE_ADMIN')}
+                        >
+                          {account.role === 'ROLE_ADMIN' ? 'Забрати права адміністратора' : 'Зробити адміністратором'}
+                        </button>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           <section className="admin-form admin-orders-panel">
             <div className="admin-form-heading">
               <h2>Замовлення</h2>
@@ -654,7 +859,11 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <span>Користувач</span>
-                      <strong>{order.username}</strong>
+                      <strong>{order.username || 'Гість'}</strong>
+                    </div>
+                    <div>
+                      <span>Email</span>
+                      <strong>{order.customerEmail || 'не вказано'}</strong>
                     </div>
                     <div>
                       <span>Сума</span>

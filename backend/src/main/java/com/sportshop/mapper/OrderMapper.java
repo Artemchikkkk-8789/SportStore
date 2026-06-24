@@ -14,6 +14,7 @@ public class OrderMapper {
         OrderDto dto = new OrderDto();
         dto.setId(order.getId());
         dto.setUsername(order.getUsername());
+        dto.setCustomerEmail(order.getCustomerEmail());
         dto.setFullName(order.getFullName());
         dto.setPhone(order.getPhone());
         dto.setCity(order.getCity());
@@ -41,6 +42,7 @@ public class OrderMapper {
         Order order = new Order();
         order.setId(dto.getId());
         order.setUsername(dto.getUsername());
+        order.setCustomerEmail(dto.getCustomerEmail());
         order.setFullName(dto.getFullName());
         order.setPhone(dto.getPhone());
         order.setCity(dto.getCity());
